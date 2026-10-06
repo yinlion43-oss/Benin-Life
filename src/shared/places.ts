@@ -25,6 +25,7 @@ export interface StarterPlace { label: string; countryCode: string; anchor: LatL
  * location, and the list is only a convenience: any place the geocoder knows can be chosen.
  */
 export const STARTER_PLACES: StarterPlace[] = [
+  { label: 'Benin City', countryCode: 'NG', anchor: { lat: 6.335, lon: 5.6037 }, region: 'Edo' },
   { label: 'Bodija, Ibadan', countryCode: 'NG', anchor: { lat: 7.4352, lon: 3.914 }, region: 'Oyo' },
   { label: 'Wuse, Abuja', countryCode: 'NG', anchor: { lat: 9.0765, lon: 7.476 }, region: 'Federal Capital Territory' },
   { label: 'Yaba, Lagos', countryCode: 'NG', anchor: { lat: 6.5095, lon: 3.3711 }, region: 'Lagos' },

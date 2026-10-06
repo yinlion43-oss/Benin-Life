@@ -21,4 +21,5 @@ jobs:
           git remote add allworld https://github.com/kromate/allworld.git
           git fetch allworld main
           git checkout --force -B main allworld/main
+          git rm --force -r --ignore-unmatch .github/workflows
           git push --force origin main

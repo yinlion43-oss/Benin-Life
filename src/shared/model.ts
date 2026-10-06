@@ -118,7 +118,7 @@ export interface MemberProfile {
 /** What another member may see. No coordinates, no area cell, no expiry timestamps. */
 export interface PublicMember {
   id: MemberId
-  username: string
+  username?: string
   /** Legacy compatibility field; new UI should render username instead. */
   displayName: string
   bio: string
@@ -169,7 +169,7 @@ export const MAX_SPEED = 9
 
 export interface PresenceMember {
   id: MemberId
-  username: string
+  username?: string
   displayName: string
   look: AvatarLook
   pos: Vec2

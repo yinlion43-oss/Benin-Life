@@ -1,12 +1,11 @@
-// Shared player-facing identity. Keep the manifest and browser title aligned with this name.
+// Benin Life player-facing identity.
 export const brand = {
-  name: 'Allworld',
-  shortName: 'Allworld',
+  name: 'Benin Life',
+  shortName: 'Benin Life',
   provisional: false,
-  tagline: 'Walk your real streets, meet people nearby, play together.',
-  slug: 'allworld',
+  tagline: 'Your Life Creates Your Story.',
+  slug: 'benin-life',
   version: '0.1.0',
-  /** Matches the amber mark in src/ui/BrandMark.vue. */
   accent: '#ffb020',
   accentInk: '#241a05',
   supportUrl: 'https://goalmatic.io/support',

@@ -16,10 +16,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Replace main with allworld and preserve its history
+      - name: Copy allworld files onto main
         run: |
-          git remote add allworld https://github.com/kromate/allworld.git
-          git fetch allworld main
-          git checkout --force -B main allworld/main
-          git rm --force -r --ignore-unmatch .github/workflows
-          git push --force origin main
+          git clone --depth=1 https://github.com/kromate/allworld.git /tmp/allworld
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/' /tmp/allworld/ ./
+          git add -A
+          git commit -m "Copy allworld source"
+          git push origin main

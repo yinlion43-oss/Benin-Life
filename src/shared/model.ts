@@ -95,8 +95,13 @@ export interface MemberPreferences {
   powerMode: 'battery' | 'balanced' | 'quality'
 }
 
+export const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/
+
 export interface MemberProfile {
   id: MemberId
+  /** Unique public identity used everywhere in Benin Life. */
+  username: string
+  /** Legacy compatibility field; new UI should render username instead. */
   displayName: string
   bio: string
   look: AvatarLook
@@ -113,6 +118,8 @@ export interface MemberProfile {
 /** What another member may see. No coordinates, no area cell, no expiry timestamps. */
 export interface PublicMember {
   id: MemberId
+  username: string
+  /** Legacy compatibility field; new UI should render username instead. */
   displayName: string
   bio: string
   look: AvatarLook
@@ -162,6 +169,7 @@ export const MAX_SPEED = 9
 
 export interface PresenceMember {
   id: MemberId
+  username: string
   displayName: string
   look: AvatarLook
   pos: Vec2

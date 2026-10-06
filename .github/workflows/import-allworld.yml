@@ -1,0 +1,24 @@
+name: Import allworld
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out destination repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Replace main with allworld and preserve its history
+        run: |
+          git remote add allworld https://github.com/kromate/allworld.git
+          git fetch allworld main
+          git checkout --force -B main allworld/main
+          git push --force origin main

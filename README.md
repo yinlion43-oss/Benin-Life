@@ -1,3 +1,15 @@
+# Benin Life
+
+**Your Life Creates Your Story.**
+
+This build uses the Allworld Vue 3 + TypeScript + three.js web-game foundation as the starting
+point for Benin Life. The first adaptation establishes the Benin City identity, Benin City as
+the primary starter location, and a data-driven Benin Life gameplay configuration.
+
+The next implementation phases can build multiplayer economy, phone apps, football, property,
+businesses, jobs, real-time Benin City day/night, social systems, advertising and the remaining
+Benin Life systems on top of this foundation.
+
 # Allworld
 
 A social world on real maps, built with Vue 3, TypeScript and three.js. Make a character, explore
@@ -45,7 +57,7 @@ files outside the checkout. The 32-byte session key also belongs outside the sta
 The native Worker uses WORLD_BINDING, WORLD_GUEST_ADMISSION and WORLD_ACCOUNT configuration.
 Server secret names are WORLD_FIREBASE_API_KEY, WORLD_SESSION_KEY and WORLD_IMPORT_SECRET.
 Optional controls include WORLD_CREATOR_CONFIG, WORLD_MAX_CONNECTIONS, WORLD_LEGACY_ORIGIN and
-WORLD_IMPORT_MAX_BYTES. No values, environment files, credentials or import payload are shipped.
+WORLD_IMPORT_MAX_BYTES. No values, environment files, credentials or import payloads are shipped.
 
 Provisioning and deployment are operator steps. Read [hosting boundaries](docs/HOSTING.md).
 Worker source and compiler inputs are included; their hashes are not deployment receipts.

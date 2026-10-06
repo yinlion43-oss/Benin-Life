@@ -43,7 +43,7 @@ const { card: creator } = useCreatorCard(() => app.mode === 'hosted' && app.phas
 const step = ref<1 | 2 | 3>(1)
 // 1 where you are · 2 your character · 3 arrive
 // The name a test member or a new guest starts with is the service's placeholder, not a choice.
-const name = ref(me.displayName.startsWith('Test member') || (guest.value && me.displayName === 'Guest') ? '' : me.displayName)
+const username = ref(me.username ? me.username.replace(/^@/, '') : '')
 const look = ref<AvatarLook>(copy(me.look))
 const area = ref<{ area: CoarseArea; source: AreaSource } | null>(null)
 const presence = ref<'here' | 'browsing'>('browsing')
@@ -53,14 +53,14 @@ const problem = ref('')
 const face = useFace()
 const clearPhotoOnSave = ref(false)
 const language = navigator.language || 'en'
-const nameOk = computed(() => name.value.trim().length >= 2)
+const usernameOk = computed(() => /^[a-z0-9_]{3,24}$/.test(username.value.trim()))
 
 async function saveCharacter(): Promise<void> {
-  if (!nameOk.value || busy.value || face.busy.value) return
+  if (!usernameOk.value || busy.value || face.busy.value) return
   busy.value = true
   problem.value = ''
   try {
-    const { profile } = await api('member.saveProfile', { displayName: name.value.trim(), bio: app.me!.bio, look: look.value, expectedRevision: app.me!.revision, clearFace: clearPhotoOnSave.value })
+    const { profile } = await api('member.saveProfile', { username: username.value.trim().toLowerCase(), bio: app.me!.bio, look: look.value, expectedRevision: app.me!.revision, clearFace: clearPhotoOnSave.value })
     clearPhotoOnSave.value = false
     app.me = profile
     look.value = copy(profile.look)
@@ -173,7 +173,7 @@ async function finish(): Promise<void> {
     await api('member.savePreferences', { preferences: { ...app.me!.preferences, language: language.slice(0, 12), units: defaults.units, discoverable: here && discoverable.value && !guest.value } })
     const { profile } = await api('member.completeOnboarding', {})
     app.me = profile
-    toast(`Welcome, ${profile.displayName}.`, 'good')
+    toast(`Welcome, @${profile.username}.`, 'good')
   } catch (error) { problem.value = messageOf(error) } finally { busy.value = false }
 }
 </script>
@@ -217,7 +217,7 @@ async function finish(): Promise<void> {
       <section v-else-if="step === 2" class="stack loose">
         <div>
           <h1>Make your character</h1>
-          <p class="muted">Choose who you play as, set the skin tone and outfit you like, or put your own face on the character from a picture. You can change it whenever you want.</p>
+          <p class="muted">Choose who you play as, set the skin tone and outfit you like, or put your own face on the character from a picture. You can change it whenever you want. Your unique @username is your identity everywhere in Benin Life.</p>
         </div>
         <fieldset class="starters">
           <legend class="label">Who do you play as?</legend>
@@ -229,8 +229,9 @@ async function finish(): Promise<void> {
           <small class="muted">Pick one to start from. Clothes, skin tone, hair and your own face come next, and there are more characters below.</small>
         </fieldset>
         <label class="field" style="max-width: 320px">
-          <span>Name others will see</span>
-          <input v-model="name" class="input" maxlength="32" autocomplete="nickname" placeholder="For example, Tolu" />
+          <span>Unique @username</span>
+          <input v-model="username" class="input" maxlength="24" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="For example, oba_benin" />
+          <small class="muted">3–24 characters: lowercase letters, numbers and underscores. This is the identity other players use.</small>
         </label>
         <AvatarEditor
           :look="look" :face="face.scan.value" :face-busy="face.busy.value || busy" :allow-photo-face="!app.guest" :country-code="area?.area.countryCode" :place-label="area?.area.label" @update:look="editLook"
@@ -238,10 +239,10 @@ async function finish(): Promise<void> {
         />
         <p v-if="problem" class="notice coral" role="alert">{{ problem }}</p>
         <div class="foot">
-          <button class="btn primary" type="button" :disabled="!nameOk || !pickedBody || busy || face.busy.value" @click="saveCharacter">{{ busy ? 'Saving…' : 'Continue' }}</button>
+          <button class="btn primary" type="button" :disabled="!usernameOk || !pickedBody || busy || face.busy.value" @click="saveCharacter">{{ busy ? 'Saving…' : 'Continue' }}</button>
           <button class="btn ghost" type="button" :disabled="busy" @click="step = 1">Back</button>
           <span v-if="!pickedBody" class="muted small">Pick who you play as, at the top.</span>
-          <span v-else-if="!nameOk" class="muted small">Add a name with at least 2 characters.</span>
+          <span v-else-if="!nameOk" class="muted small">Use a valid @username: 3–24 lowercase letters, numbers or underscores.</span>
         </div>
       </section>
 

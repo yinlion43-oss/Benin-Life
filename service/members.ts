@@ -80,6 +80,14 @@ function normalizeUsername(value: string, memberId: MemberId): string {
 export function record(world: World, memberId: MemberId): MemberRecord {
   const found = state(world).members[memberId]
   if (!found) throw new WorldError('not_found', 'That member was not found.')
+  // Migrate older profiles into the Benin Life @username identity without losing their character.
+  if (!found.profile.username) {
+    const migrated = normalizeUsername(found.profile.displayName, memberId)
+    found.profile.username = migrated
+    found.profile.displayName = `@${migrated}`
+    found.profile.revision++
+    world.touch()
+  }
   // Looks saved against an earlier character set fall back to the default body.
   if (!(AVATAR_BODIES as readonly string[]).includes(found.profile.look.body)) found.profile.look = { ...DEFAULT_LOOK, face: found.profile.look.face ?? null }
   return found

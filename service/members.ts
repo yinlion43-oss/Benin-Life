@@ -4,7 +4,7 @@ import type { AreaId, HomeId, Iso, MemberId, ReportId, RoomKey } from '../src/sh
 import { iso, ms, newId } from '../src/shared/ids.ts'
 import { areaIdOf, areaOfDistrict, districtIdOf, parseAreaId, parseDistrictId } from '../src/shared/geo.ts'
 import {
-  AVATAR_BODIES, AVATAR_HEIGHT, CURRENT_AREA_TTL_DAYS, FACE_LANDMARKS, FACE_TEXTURE_MAX_BYTES, REPORT_REASONS,
+  AVATAR_BODIES, AVATAR_HEIGHT, CURRENT_AREA_TTL_DAYS, FACE_LANDMARKS, FACE_TEXTURE_MAX_BYTES, REPORT_REASONS, USERNAME_PATTERN,
   WorldError,
 } from '../src/shared/model.ts'
 import type {
@@ -60,7 +60,7 @@ export function ensureMember(world: World, memberId: MemberId, displayName: stri
   }
   const created: MemberRecord = {
     profile: {
-      id: memberId, displayName, bio: '', look: structuredClone(DEFAULT_LOOK), preferences: { ...DEFAULT_PREFERENCES },
+      id: memberId, username: normalizeUsername(displayName, memberId), displayName: `@${normalizeUsername(displayName, memberId)}`, bio: '', look: structuredClone(DEFAULT_LOOK), preferences: { ...DEFAULT_PREFERENCES },
       currentArea: null, browsing: null, homeId: `h_${memberId.slice(2)}` as HomeId, onboardedAt: null,
       createdAt: iso(world.now()), revision: 1,
     },
@@ -69,6 +69,12 @@ export function ensureMember(world: World, memberId: MemberId, displayName: stri
   members[memberId] = created
   world.touch()
   return created
+}
+
+function normalizeUsername(value: string, memberId: MemberId): string {
+  const base = value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24)
+  if (base.length >= 3 && USERNAME_PATTERN.test(base)) return base
+  return `player_${memberId.replace(/[^a-z0-9]/gi, '').slice(-12)}`.slice(0, 24)
 }
 
 export function record(world: World, memberId: MemberId): MemberRecord {
@@ -201,7 +207,7 @@ export function publicMember(world: World, viewer: MemberId, target: MemberId): 
   const mayShowArea = rel === 'self' || accepted || profile.preferences.discoverable
   const tag = accepted ? null : friendTag(world, viewer, target)
   return {
-    id: profile.id, displayName: profile.displayName, bio: profile.bio, look: lookFor(world, viewer, target),
+    id: profile.id, username: profile.username, displayName: `@${profile.username}`, bio: profile.bio, look: lookFor(world, viewer, target),
     areaLabel: area && mayShowArea ? area.label : null, relation: rel, online: world.isOnline(target),
     ...(tag ? { automatic: tag } : {}),
     ...(state(world).creator === target ? { verified: 'creator' as const } : {}),
@@ -306,14 +312,19 @@ export function registerMembers(world: World): void {
   world.register('member.saveProfile', value => {
     const raw = obj(value)
     return {
-      displayName: str(raw, 'displayName', { min: 2, max: 32 }), bio: str(raw, 'bio', { max: 160 }),
+      username: str(raw, 'username', { min: 3, max: 24 }), displayName: raw.displayName === undefined ? undefined : str(raw, 'displayName', { min: 2, max: 32 }), bio: str(raw, 'bio', { max: 160 }),
       clearFace: raw.clearFace === undefined ? false : bool(raw, 'clearFace'),
       look: parseLook(raw.look), expectedRevision: num(raw, 'expectedRevision', { integer: true, min: 0 }),
     }
   }, (ctx, input) => {
     const entry = record(world, ctx.memberId)
     if (input.expectedRevision !== entry.profile.revision) throw new WorldError('conflict', 'Your profile changed on another device. Reload it and try again.')
-    entry.profile.displayName = input.displayName
+    const username = input.username.trim().toLowerCase()
+    if (!USERNAME_PATTERN.test(username)) throw new WorldError('invalid', 'Username must be 3–24 characters using lowercase letters, numbers or underscores.')
+    const duplicate = Object.values(state(world).members).find(member => member.profile.id !== ctx.memberId && member.profile.username === username)
+    if (duplicate) throw new WorldError('conflict', 'That @username is already taken.')
+    entry.profile.username = username
+    entry.profile.displayName = `@${username}`
     entry.profile.bio = input.bio
     entry.profile.look = { ...input.look, face: input.clearFace ? null : entry.profile.look.face }
     if (input.clearFace) delete faces(world)[ctx.memberId]

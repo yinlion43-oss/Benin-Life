@@ -50,7 +50,7 @@ export interface VariantInput {
 export interface Ops extends LifeOps, DirectOps, ComebackOps, ArenaOps, CreatorOps, VehicleOps, LiveCountsOps, HomeOps {
   // ── Member ──
   'member.me': Op<Empty, { profile: MemberProfile; blocked: PublicMember[]; reviewer: boolean }>
-  'member.saveProfile': Op<{ displayName: string; bio: string; look: AvatarLook; expectedRevision: number; clearFace?: boolean }, { profile: MemberProfile }>
+  'member.saveProfile': Op<{ username: string; displayName?: string; bio: string; look: AvatarLook; expectedRevision: number; clearFace?: boolean }, { profile: MemberProfile }>
   'member.savePreferences': Op<{ preferences: MemberPreferences }, { profile: MemberProfile }>
   'member.setCurrentArea': Op<{ area: CoarseArea; source: AreaSource }, { profile: MemberProfile }>
   'member.clearCurrentArea': Op<Empty, { profile: MemberProfile }>

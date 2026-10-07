@@ -53,7 +53,7 @@ export function registerRentals(world: World): void {
     }
     // Listing is active but has no tenant until accepted by a player.
     world.touch()
-    return { lease: state(world).leases[key(homeId)] }
+    return { lease: state(world).leases[key(homeId)]! }
   })
 
   world.register('rental.offer', value => {

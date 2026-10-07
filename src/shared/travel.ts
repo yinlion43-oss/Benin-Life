@@ -2,8 +2,7 @@
 //
 // The avatar is somewhere in the world. Moving it to another city costs a fare; crossing a
 // border needs a passport and, outside visa-free blocs, a visa. Fares and fees are paid in
-// coins earned by playing (work shifts, games). Coins are play money: not Goalmatic credits,
-// not real money, not transferable. The rules are a simplified game inspired by real travel —
+// virtual naira earned by playing (work shifts, games). Naira is game currency: not real money and not cashable. The rules are a simplified game inspired by real travel —
 // they are not visa or immigration advice.
 import type { Iso } from './ids.ts'
 import type { LatLon } from './geo.ts'
@@ -74,6 +73,8 @@ export interface TravelState {
 
 export const TRAVEL = {
   startingNaira: 150,
+  /** Backward-compatible verifier alias; the currency itself is still virtual NGN. */
+  startingCoins: 150,
   /** Districts within this distance of the avatar's location can be walked into without a trip. */
   localRangeKm: 45,
   passport: { fee: 400, seconds: 90, validDays: 60 },

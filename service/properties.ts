@@ -7,6 +7,7 @@ import { beninLifeReady, memberByBeninUsername, record } from './members.ts'
 import { careerPoints } from './work.ts'
 import { transferCoinsByUsername } from './travel.ts'
 import { transferHomeOwnership } from './homes.ts'
+import { cancelRentalForHome } from './rentals.ts'
 
 const state = (world: World) => world.slice<{ sales: Record<string, any> }>('propertySales', () => ({ sales: {} }))
 const key = (homeId: HomeId) => String(homeId)
@@ -29,6 +30,7 @@ export function registerProperties(world: World): void {
     if (!buyerId) throw new WorldError('not_found', 'No completed Benin Life character uses that @username.')
     if (buyerId === ctx.memberId) throw new WorldError('invalid', 'You cannot sell to yourself.')
     if (record(world, ctx.memberId).profile.homeId !== input.homeId) throw new WorldError('forbidden', 'You can only sell your current home.')
+    cancelRentalForHome(world, input.homeId)
     state(world).sales[key(input.homeId)] = { homeId: input.homeId, sellerId: ctx.memberId, buyerUsername: username, price: input.price, createdAt: iso(ctx.now), expiresAt: iso(ctx.now + saleWindow) }
     world.touch()
     return { offer: state(world).sales[key(input.homeId)] }

@@ -10,7 +10,8 @@ import type { Card, DashInput, Suit, TableView } from '../src/shared/play.ts'
 import type { ServerEvent } from '../src/shared/protocol.ts'
 import type { World } from '../service/kernel.ts'
 import { createWorld } from '../service/index.ts'
-import { addFriendship, ensureMember } from '../service/members.ts'
+import { addFriendship, ensureMember, record } from '../service/members.ts'
+import { STARTING_SKILLS } from '../src/shared/beninLife.ts'
 
 const SECOND = 1000, MINUTE = 60_000, HOUR = 3_600_000, DAY = 86_400_000
 let now = Date.UTC(2026, 9, 1, 12)
@@ -22,6 +23,11 @@ function makeWorld(): { world: World; events: Record<string, ServerEvent[]> } {
   const events: Record<string, ServerEvent[]> = {}
   for (const [member, name] of [[A, 'Ada'], [B, 'Ben'], [C, 'Cleo'], [D, 'Dev']] as const) {
     ensureMember(world, member, name)
+    const profile = record(world, member).profile
+    profile.username = `@${name.toLowerCase()}`
+    profile.displayName = profile.username
+    profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
+    profile.onboardedAt = new Date(now).toISOString()
     events[member] = []
     world.connect(member, frame => { if (frame.t === 'event') events[member]!.push(frame.event) }, () => {})
   }

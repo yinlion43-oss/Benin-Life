@@ -6,7 +6,7 @@ import type { BusinessDay, BusinessType, PlayerBusiness, BusinessEmployee } from
 import { WorldError } from '../src/shared/model.ts'
 import type { World } from './kernel.ts'
 import { beninLifeReady, memberByBeninUsername, record } from './members.ts'
-import { transferCoinsByUsername } from './travel.ts'
+import { transferNairaByUsername } from './travel.ts'
 import { empty, obj, oneOf, str } from './parse.ts'
 import { addPoints, careerPoints, spendPoints } from './work.ts'
 
@@ -42,7 +42,7 @@ export function registerBusiness(world: World): void {
     if (!due.length || careerPoints(world, memberId) < total) return []
     const paid: Array<{ username: string; amount: number }> = []
     for (const employee of due) {
-      transferCoinsByUsername(world, memberId, employee.username, employee.salary, `Payroll · ${business.name}`)
+      transferNairaByUsername(world, memberId, employee.username, employee.salary, `Payroll · ${business.name}`)
       employee.lastPaidAt = iso(now)
       paid.push({ username: employee.username, amount: employee.salary })
     }

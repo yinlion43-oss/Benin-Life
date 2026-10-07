@@ -19,6 +19,7 @@ import { registerStreetEntry } from './streetEntry.ts'
 import { registerVehicles } from './vehicles.ts'
 import { registerBusiness } from './business.ts'
 import { registerRentals } from './rentals.ts'
+import { registerProperties } from './properties.ts'
 
 export function createWorld(options: WorldOptions = {}): World {
   const world = new World(options)
@@ -30,6 +31,7 @@ export function createWorld(options: WorldOptions = {}): World {
   registerWork(world)
   registerBusiness(world)
   registerRentals(world)
+  registerProperties(world)
   registerGames(world)
   registerMarket(world)
   registerJobs(world)

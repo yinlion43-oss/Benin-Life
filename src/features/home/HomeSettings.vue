@@ -28,7 +28,6 @@ async function setPolicy(policy: VisitPolicy): Promise<void> {
   const result = await attempt('home.setPolicy', { policy }, policy === 'private' ? 'Your home is private. Visitors inside were shown out.' : policy === 'friends' ? 'Friends can visit your home.' : 'Anyone can visit your home.')
   if (result) {
     state.home = result.home
-    // The scene's own copy is replaced only when it is this very home: from a visit or the street it is somebody else's, or nobody's.
     if (world.kind === 'home' && world.home?.id === result.home.id) world.home = result.home
   }
 }
@@ -62,7 +61,7 @@ const saleBuyerUsername = ref('')
 const salePrice = ref<string | number>(100000)
 
 async function sellProperty(): Promise<void> {
-  if (!saleBuyerUsername.value.trim()) return
+  if (!state.home || !saleBuyerUsername.value.trim()) return
   const result = await attempt('property.sellOffer', { homeId: state.home.id, buyerUsername: saleBuyerUsername.value.trim(), price: Number(salePrice.value) }, 'Sale offer sent.')
   if (result) { saleBuyerUsername.value = ''; await property.reload() }
 }

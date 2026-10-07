@@ -1,5 +1,5 @@
 // Go to work: a short simulated shift at a café, shop or studio. Tickets are generated and judged
-// here, the client only ever sees the task in front of it. Points are game points, never money.
+// here, the client only ever sees the task in front of it. All earnings are game naira, never real money.
 import type { Iso, MemberId, ShiftId } from '../src/shared/ids.ts'
 import { iso, ms, newId } from '../src/shared/ids.ts'
 import { WorldError } from '../src/shared/model.ts'
@@ -89,7 +89,7 @@ function careerOf(world: World, memberId: MemberId): CareerRecord {
   return careers[memberId] ??= { points: 0, xp: { service: 0, logistics: 0, craft: 0 }, completed: 0, leftEarly: 0, recent: [] }
 }
 
-/** Game points from play (work shifts, games). Not credits and not money. */
+/** Game naira earned from play (work shifts, games). Never real money. */
 export const careerPoints = (world: World, memberId: MemberId): number => state(world).careers[memberId]?.points ?? 0
 
 export function addPoints(world: World, memberId: MemberId, points: number, earned?: { kind: 'work' | 'game' | 'gift' | 'business'; text: string }): void {
@@ -112,7 +112,7 @@ const shiftClosedHook: ShiftClosed = (world, memberId, shift) => { for (const ho
 export function onShiftClosed(hook: ShiftClosed): void { shiftClosedHooks.push(hook) }
 export const setShiftClosedHook = onShiftClosed
 
-/** Pay for something with game points. The balance never goes below zero: too little refuses the whole amount. */
+/** Pay for something with game naira. The balance never goes below zero: too little refuses the whole amount. */
 /** `spent` writes the purchase into the wallet history (the caller that keeps its own history leaves it out). */
 export function spendPoints(world: World, memberId: MemberId, amount: number, spent?: { kind: 'food' | 'business'; text: string }): void {
   if (!Number.isFinite(amount) || amount < 0) throw new WorldError('invalid', 'That amount is not valid.')
@@ -120,7 +120,7 @@ export function spendPoints(world: World, memberId: MemberId, amount: number, sp
   if (cost === 0) return
   const career = careerOf(world, memberId)
   const short = cost - career.points
-  if (short > 0) throw new WorldError('conflict', `You need ${short} more ${short === 1 ? 'coin' : 'coins'}. Work a shift or play a game to earn them.`)
+  if (short > 0) throw new WorldError('conflict', `You need ₦${short.toLocaleString()} more. Work a shift or play a game to earn it.`)
   career.points -= cost
   world.touch()
   if (spent) spendingHook(world, memberId, cost, spent.kind, spent.text)

@@ -6,7 +6,7 @@ import { iso } from '../src/shared/ids.ts'
 import { empty, num, obj, str } from './parse.ts'
 import { careerPoints } from './work.ts'
 import { memberByBeninUsername, beninLifeReady, record } from './members.ts'
-import { transferCoinsByUsername } from './travel.ts'
+import { transferNairaByUsername } from './travel.ts'
 import { currentHomeRoom } from './homes.ts'
 import { propertyRentBonus } from './propertyUpgrades.ts'
 
@@ -27,7 +27,7 @@ export function registerRentals(world: World): void {
         const tenantId = memberByBeninUsername(world, lease.tenantUsername)
         if (!tenantId) { lease.active = false; continue }
         if (careerPoints(world, tenantId) < effectiveRent(world, lease)) continue
-        transferCoinsByUsername(world, tenantId, record(world, lease.ownerId).profile.username!, effectiveRent(world, lease), `Rent · ${lease.homeId}`)
+        transferNairaByUsername(world, tenantId, record(world, lease.ownerId).profile.username!, effectiveRent(world, lease), `Rent · ${lease.homeId}`)
         lease.lastPaidAt = iso(now)
         lease.nextDueAt = iso(now + week)
         world.touch()
@@ -96,7 +96,7 @@ export function registerRentals(world: World): void {
     const lease = Object.values(state(world).leases).find(item => item.active && item.tenantUsername.toLowerCase() === username.toLowerCase())
     if (!lease) throw new WorldError('not_found', 'You have no active rental.')
     if (careerPoints(world, ctx.memberId) < effectiveRent(world, lease)) throw new WorldError('conflict', 'Insufficient bank balance for rent.')
-    transferCoinsByUsername(world, ctx.memberId, record(world, lease.ownerId).profile.username!, effectiveRent(world, lease), `Rent · ${lease.homeId}`)
+    transferNairaByUsername(world, ctx.memberId, record(world, lease.ownerId).profile.username!, effectiveRent(world, lease), `Rent · ${lease.homeId}`)
     lease.lastPaidAt = iso(ctx.now); lease.nextDueAt = iso(ctx.now + week)
     world.touch()
     return { lease, balance: careerPoints(world, ctx.memberId) }

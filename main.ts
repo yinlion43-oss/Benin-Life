@@ -31,6 +31,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/market/sell', component: () => import('./src/features/market/SellPage.vue'), meta: { title: 'Sell', wide: true, gate: 'marketplace' } },
   { path: '/jobs', component: () => import('./src/features/market/JobsPage.vue'), meta: { title: 'Jobs and tasks', wide: true, gate: 'application' } },
   { path: '/life', component: () => import('./src/features/life/BeninLifePage.vue'), meta: { title: 'Life', wide: true } },
+  { path: '/wallet', component: () => import('./src/features/life/BeninLifePage.vue'), meta: { title: 'Wallet', wide: true } },
   { path: '/jobs/:id', component: () => import('./src/features/market/JobPage.vue'), meta: { title: 'Listing', wide: true, gate: 'application' } },
   { path: '/travel', component: () => import('./src/features/travel/TravelPage.vue'), meta: { title: 'Travel', wide: true } },
   { path: '/messages', component: () => import('./src/features/social/MessagesPage.vue'), meta: { title: 'Messages', wide: true, gate: 'messaging' } },

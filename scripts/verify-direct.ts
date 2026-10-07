@@ -3,7 +3,8 @@
 // Run: node scripts/verify-direct.ts — prints one PASS line per rule, exits non-zero on failure.
 import assert from 'node:assert/strict'
 import { createWorld } from '../service/index.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
+import { STARTING_SKILLS } from '../src/shared/beninLife.ts'
 import { roomOf } from '../service/rooms.ts'
 import { setPresenceCacheMs } from '../service/direct.ts'
 import { areaFromPlace } from '../src/geo/areas.ts'
@@ -65,7 +66,14 @@ const nextStreet: RoomRef = { kind: 'district', districtId: neighbouringDistrict
 const market: RoomRef = { kind: 'venue', districtId: ibadan.arrivalDistrict, placeId: 'p555' as never }
 const lagosStreet: RoomRef = { kind: 'district', districtId: lagos.arrivalDistrict }
 
-for (const [memberId, name] of NAMES) { ensureMember(world, memberId, name); connect(memberId) }
+for (const [memberId, name] of NAMES) {
+  ensureMember(world, memberId, name)
+  const profile = record(world, memberId).profile
+  profile.username = `@${name.toLowerCase()}`
+  profile.displayName = profile.username
+  profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
+  connect(memberId)
+}
 for (const memberId of [a, b, c, e, f, g]) world.call(memberId, 'member.setCurrentArea', { area: ibadan, source: 'manual' })
 world.call(d, 'member.setCurrentArea', { area: lagos, source: 'manual' })
 for (const [memberId] of NAMES) world.call(memberId, 'member.completeOnboarding', {})

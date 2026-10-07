@@ -2,6 +2,7 @@
 // The home tab: its name, who may visit, where it is said to be, other homes to visit, and the
 // receipts of what was bought. None of it changes the rooms or costs anything.
 import type { HomeId } from '../../shared/ids.ts'
+import { ref } from 'vue'
 import type { VisitPolicy } from '../../shared/social.ts'
 import { api, app, attempt } from '../../state/app.ts'
 import { world } from '../../state/world.ts'
@@ -42,12 +43,14 @@ const upgradeOptions = [
 ] as const
 const homeUpgrades = ref<Record<string, boolean>>({})
 async function loadUpgrades(): Promise<void> {
+  if (!state.home) return
   const result = await api('property.upgrades', { homeId: state.home.id })
   if (result) homeUpgrades.value = result.upgrades
 }
 async function installUpgrade(id: string): Promise<void> {
+  if (!state.home) return
   const result = await attempt('property.upgrade', { homeId: state.home.id, upgrade: id }, 'Property upgrade installed.')
-  if (result) { homeUpgrades.value = Object.fromEntries(result.installed.map(item => [item, true])); await refreshPoints() }
+  if (result) homeUpgrades.value = Object.fromEntries(result.installed.map(item => [item, true]))
 }
 void loadUpgrades()
 
@@ -63,11 +66,11 @@ async function sellProperty(): Promise<void> {
   const result = await attempt('property.sellOffer', { homeId: state.home.id, buyerUsername: saleBuyerUsername.value.trim(), price: Number(salePrice.value) }, 'Sale offer sent.')
   if (result) { saleBuyerUsername.value = ''; await property.reload() }
 }
-async function acceptPropertySale(homeId: string): Promise<void> {
+async function acceptPropertySale(homeId: HomeId): Promise<void> {
   const result = await attempt('property.acceptSale', { homeId }, 'Property purchased and bank payment completed.')
   if (result) { await property.reload(); await rent.reload() }
 }
-async function cancelPropertySale(homeId: string): Promise<void> {
+async function cancelPropertySale(homeId: HomeId): Promise<void> {
   const result = await attempt('property.cancelSale', { homeId }, 'Sale offer cancelled.')
   if (result) await property.reload()
 }
@@ -122,7 +125,7 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
       <div class="days">
         <div v-for="item in upgradeOptions" :key="item.id" class="list-row">
           <span class="grow"><strong>{{ item.label }}</strong><span class="muted tiny">₦ {{ item.price }} · +₦{{ item.bonus }}/week rental value</span></span>
-          <button class="btn sm" type="button" :disabled="!!homeUpgrades[item.id] || busy" @click="installUpgrade(item.id)">{{ homeUpgrades[item.id] ? 'Installed' : 'Install' }}</button>
+          <button class="btn sm" type="button" :disabled="!!homeUpgrades[item.id] || state.saving" @click="installUpgrade(item.id)">{{ homeUpgrades[item.id] ? 'Installed' : 'Install' }}</button>
         </div>
       </div>
     </section>

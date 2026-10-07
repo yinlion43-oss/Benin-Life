@@ -162,13 +162,14 @@ optional first-start choices; they are points, not neighborhood boundaries. Edo 
 receive an Edo-specific food menu, chosen from the saved area region by the service. The Phone menu links to existing messages,
 contacts, jobs, home, map, social and settings pages. BeninBank sends game coins by username,
 stores paired server-side transaction history and handles same-reference retries; it has no
-Request Money operation. Feedback no longer routes to the
+Request Money operation. Player-owned businesses can hire completed players by unique @username;
+weekly payroll is service-scheduled and paid from the owner's game-bank balance, with insufficient
+funds leaving payroll due rather than partially paying staff. Feedback no longer routes to the
 upstream Allworld board, and inherited creator copy no longer names an individual.
 
 The five-step flow does not yet supply an integrated Benin City street dataset, the complete
-perks/feelings catalog, approved starter money/home/job balance, scheduled BeninBank payments,
-businesses, rent transactions, football clubs, legal gameplay, campaigns, or the other systems
-listed below. Product constants and a written design are not counted as playable features.
+perks/feelings catalog, approved starter money/home/job balance, scheduled BeninBank payments beyond the business payroll layer, property rent transactions,
+football clubs, legal gameplay, campaigns, or the other systems listed below. Product constants and a written design are not counted as playable features.
 
 ## Current inherited systems and next integration order
 
@@ -178,7 +179,7 @@ listed below. Product constants and a written design are not counted as playable
 | 2 | Username and onboarding | account/session, appearance editor, five-step onboarding, unique handle registry, traits/dream/status/skills/perk initialization | starter loadout/balance, migration policy, and full onboarding acceptance |
 | 3 | Needs/skills/perks/feelings | service-owned life needs and activities, initial Benin skill and perk records, Edo-specific service-resolved food menu | trait/perk effects, complete event catalogue and persistence |
 | 4 | Phone and BeninBank | app hub, username transfer, paired transaction history, retry-safe server operation | scheduled payment operations, reconciliation and broader wallet-ledger integration; no request-money UI/op |
-| 5 | Work, businesses, property | jobs/work shifts, seller and homes/plots | careers, employee contracts, player business ledger, rent/ownership transactions |
+| 5 | Work, businesses, property | jobs/work shifts, seller and homes/plots, player business | careers, employee contracts and username-based weekly payroll are wired; rent/ownership transactions and full premises/supply markets remain |
 | 6 | Social, transport, city life | rooms, people, messages, events, travel, vehicles | interaction progression, dating consent, NPC/job/party/event schedules, Danfo/Keke/Okada tuning |
 | 7 | Football | sports/game hall primitives | Crescent venue, clubs, 5/7/small-sided scheduling, team payments |
 | 8 | Legal and advertising | reports/blocks, street rendering, service ledger primitives | fictional case loop, Oko Prison, campaign moderation, 18+4 anchored slots, campaign billing |

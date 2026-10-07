@@ -3,7 +3,8 @@
 // Runs the service in-process with a controllable clock. Not a test suite: prints PASS lines.
 import assert from 'node:assert/strict'
 import { createWorld } from '../service/index.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
+import { STARTING_SKILLS } from '../src/shared/beninLife.ts'
 import { quietUntil } from '../service/notify.ts'
 import { placeOf } from '../service/rooms.ts'
 import { areaFromPlace } from '../src/geo/areas.ts'
@@ -20,6 +21,10 @@ const a = 'm_local_a' as MemberId, b = 'm_local_b' as MemberId, c = 'm_local_c' 
 const events = new Map<MemberId, ServerEvent[]>()
 for (const [id, name] of [[a, 'Ada'], [b, 'Bayo'], [c, 'Chidi'], [d, 'Dara']] as const) {
   ensureMember(world, id, name)
+  const profile = record(world, id).profile
+  profile.username = `@${name.toLowerCase()}`
+  profile.displayName = profile.username
+  profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
   events.set(id, [])
   world.connect(id, (frame: ServerFrame) => { if (frame.t === 'event') events.get(id)!.push(frame.event) }, () => undefined)
 }

@@ -5,7 +5,7 @@
 // and who is told where a home stands, and passes those answers to both. The district label is
 // for flavour only: moving it never touches the owner's current area or nearby matching.
 import type { DistrictId, HomeId, Iso, MemberId } from '../src/shared/ids.ts'
-import { iso } from '../src/shared/ids.ts'
+import { iso, newId } from '../src/shared/ids.ts'
 import { parseDistrictId } from '../src/shared/geo.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { RoomRef } from '../src/shared/model.ts'
@@ -96,6 +96,29 @@ function findHome(world: World, homeId: HomeId): HomeRecord {
  * module's invitations give the same answer. It spends nothing from anyone's request budget: the
  * caller is whatever operation, or view, already holds the viewer's. Throws what `home.get` throws.
  */
+export function transferHomeOwnership(world: World, sellerId: MemberId, buyerId: MemberId, homeId: HomeId): void {
+  const home = findHome(world, homeId)
+  if (home.owner !== sellerId) throw new WorldError('forbidden', 'Only the current property owner can sell this home.')
+  if (sellerId === buyerId) throw new WorldError('invalid', 'You cannot sell a property to yourself.')
+  if (occupantsOfRoom(world, roomKey({ kind: 'home', homeId })).length > 0) throw new WorldError('conflict', 'Everyone must leave the property before it can be sold.')
+  const sellerProfile = record(world, sellerId).profile
+  const buyerProfile = record(world, buyerId).profile
+  const replacementHomeId = newId<HomeId>('home')
+  state(world).homes[replacementHomeId] = {
+    id: replacementHomeId, owner: sellerId, name: `${sellerProfile.displayName}’s place`, districtLabel: 'Not placed yet',
+    policy: 'friends', layout: structuredClone(STARTER_LAYOUT), revision: 1, updatedAt: iso(world.now()),
+  }
+  home.owner = buyerId
+  home.policy = 'friends'
+  home.updatedAt = iso(world.now())
+  sellerProfile.homeId = replacementHomeId
+  buyerProfile.homeId = homeId
+  sellerProfile.revision += 1
+  buyerProfile.revision += 1
+  tellStreet(world, home)
+  world.touch()
+}
+
 export function approachTo(world: World, viewer: MemberId, homeId: HomeId | null): HomeApproach {
   const home = homeId ? findHome(world, homeId) : ensureHome(world, viewer)
   if (!mayVisit(world, viewer, home)) throw new WorldError('forbidden', 'This home is private.')

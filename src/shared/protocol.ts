@@ -140,6 +140,8 @@ export interface Ops extends LifeOps, DirectOps, ComebackOps, ArenaOps, CreatorO
   'property.cancelSale': Op<{ homeId: HomeId }, { cancelled: true }>
   'property.mine': Op<Empty, { selling: PropertySaleOffer[]; buying: PropertySaleOffer[] }>
   'property.portfolio': Op<Empty, { homes: { homeId: HomeId; primary: boolean }[] }>
+  'property.upgrade': Op<{ homeId: HomeId; upgrade: string }, { homeId: HomeId; upgrade: string; installed: string[]; balance: number }>
+  'property.upgrades': Op<{ homeId: HomeId }, { homeId: HomeId; upgrades: Record<string, boolean> }>
   'travel.quote': Op<{ to: CoarseArea }, { quote: TravelQuote }>
   /** Pays the fare and starts the trip. The avatar arrives when the trip's time is up. */
   'travel.book': Op<{ to: CoarseArea }, { state: TravelState }>

@@ -340,6 +340,27 @@ function quoteFor(world: World, memberId: MemberId, member: MemberTravel, to: Co
  * For modules that pay coins (work, games): call this after adding the points, so the wallet
  * history shows where they came from. It records the earning; it does not move coins itself.
  */
+/** Transfer play-money coins between completed Benin Life characters by their unique @username. */
+export function transferCoinsByUsername(world: World, senderId: MemberId, username: string, amount: number, text: string): { transferId: string; balance: number } {
+  const normalized = normalizeBeninUsername(username)
+  if (!normalized) throw new WorldError('invalid', 'Enter a valid @username.')
+  if (!Number.isSafeInteger(amount) || amount < 1) throw new WorldError('invalid', 'That amount is not valid.')
+  if (!beninLifeReady(world, senderId)) throw new WorldError('conflict', 'Finish your Benin Life character setup first.')
+  const recipientId = memberByBeninUsername(world, normalized)
+  if (!recipientId) throw new WorldError('not_found', 'No completed Benin Life character uses that @username.')
+  if (recipientId === senderId) throw new WorldError('invalid', 'Choose another player.')
+  const sender = memberOf(world, senderId), recipient = memberOf(world, recipientId)
+  if (careerPoints(world, recipientId) + amount > Number.MAX_SAFE_INTEGER) throw new WorldError('conflict', 'That transfer would exceed the recipient’s game coin balance limit.')
+  spendPoints(world, senderId, amount)
+  addPoints(world, recipientId, amount)
+  const transferId = `bt_${randomToken(12)}`
+  const recipientUsername = record(world, recipientId).profile.username!
+  log(world, senderId, sender, 'transfer-out', -amount, `To ${recipientUsername} · ${text}`, transferId)
+  log(world, recipientId, recipient, 'transfer-in', amount, `From ${record(world, senderId).profile.username!} · ${text}`, transferId)
+  announce(world, senderId, sender); announce(world, recipientId, recipient)
+  return { transferId, balance: careerPoints(world, senderId) }
+}
+
 export function recordEarning(world: World, memberId: MemberId, amount: number, kind: 'work' | 'game' | 'gift' | 'business', text: string): void {
   if (!(amount > 0) || !exists(world, memberId)) return
   const member = memberOf(world, memberId)

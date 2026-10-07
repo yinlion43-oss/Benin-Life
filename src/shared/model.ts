@@ -110,6 +110,8 @@ export interface MemberProfile {
   /** Last district the member browsed. Asserts nothing about physical presence. */
   browsing: CoarseArea | null
   homeId: HomeId
+  /** All homes owned by this player; the first entry is the primary home. */
+  ownedHomeIds?: HomeId[]
   onboardedAt: Iso | null
   createdAt: Iso
   revision: number

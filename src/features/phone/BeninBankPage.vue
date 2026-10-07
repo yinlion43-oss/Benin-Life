@@ -17,7 +17,7 @@ const issue = ref('')
 const pendingClientId = ref('')
 const sent = ref('')
 const normalized = computed(() => normalizeBeninUsername(username.value))
-const coins = computed(() => travel.state?.balance ?? app.points ?? 0)
+const balance = computed(() => travel.state?.balance ?? app.points ?? 0)
 const entries = computed(() => history.data.value?.transfers ?? [])
 const parsedAmount = computed(() => Number(amount.value))
 const amountValid = computed(() => Number.isSafeInteger(parsedAmount.value) && parsedAmount.value > 0)
@@ -32,7 +32,7 @@ async function send(): Promise<void> {
   pendingClientId.value = clientId
   try {
     const result = await api('beninBank.transfer', { username: normalized.value, amount: parsedAmount.value, clientId })
-    sent.value = `Sent ${result.amount.toLocaleString()} game coins to ${result.username}.`
+    sent.value = `Sent ₦${result.amount.toLocaleString()} to ${result.username}.`
     toast(sent.value, 'good')
     username.value = ''; amount.value = ''; pendingClientId.value = ''
     await Promise.all([loadTravel(), history.reload()])
@@ -44,37 +44,37 @@ async function send(): Promise<void> {
   } finally { busy.value = false }
 }
 
-const signedCoins = (value: number): string => `${value < 0 ? '−' : '+'}${Math.abs(value).toLocaleString()} coins`
+const signedNaira = (value: number): string => `${value < 0 ? '−' : '+'}₦${Math.abs(value).toLocaleString()}`
 const when = (value: string): string => new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
 async function refresh(): Promise<void> { await Promise.all([loadTravel(), history.reload()]) }
 </script>
 
 <template>
-  <PanelPage title="BeninBank" subtitle="Game coins only" :back="'/phone'" wide>
+  <PanelPage title="BeninBank" subtitle="Virtual naira only" :back="'/phone'" wide>
     <StateView v-if="read.state.value === 'loading' && !travel.loaded" state="loading" title="Opening BeninBank" />
     <StateView v-else-if="read.state.value === 'error' && !travel.loaded" state="error" :message="read.error.value" @retry="read.reload()" />
     <template v-else>
-      <section class="card balance tint-amber" aria-label="Your game coin balance">
+      <section class="card balance tint-amber" aria-label="Your virtual naira balance">
         <div class="tiny muted">AVAILABLE BALANCE</div>
-        <strong class="amount num">{{ coins.toLocaleString() }} <span>coins</span></strong>
-        <p class="small muted">Earned by playing. These coins are not real money and cannot be exchanged for cash.</p>
+        <strong class="amount num">₦{{ balance.toLocaleString() }}</strong>
+        <p class="small muted">Earned by playing. This virtual naira is not real money and cannot be exchanged for cash.</p>
       </section>
 
       <section class="card transfer stack" aria-labelledby="transfer-heading">
         <div>
-          <h2 id="transfer-heading">Send coins</h2>
+          <h2 id="transfer-heading">Send naira</h2>
           <p class="small muted">Send directly to another completed Benin Life character by their unique @username. Transfers are final.</p>
         </div>
         <div v-if="app.guest" class="notice amber" role="status">Save your character to an account before using BeninBank.</div>
         <form v-else class="stack" @submit.prevent="send">
           <label class="field"><span>Recipient @username</span><input v-model="username" class="input" type="text" maxlength="21" autocomplete="off" autocapitalize="none" spellcheck="false" :disabled="fieldsLocked" placeholder="@username" /></label>
-          <label class="field"><span>Amount in game coins</span><input v-model="amount" class="input num" type="number" min="1" step="1" inputmode="numeric" :disabled="fieldsLocked" placeholder="Whole number of coins" /></label>
+          <label class="field"><span>Amount in naira</span><input v-model="amount" class="input num" type="number" min="1" step="1" inputmode="numeric" :disabled="fieldsLocked" placeholder="Whole number of naira" /></label>
           <p v-if="pendingClientId" class="notice sky" role="status">The previous reply was interrupted. Retry sends the same transfer safely. Keep the recipient and amount as shown.</p>
           <p v-if="issue" class="notice coral" role="alert">{{ issue }}</p>
           <p v-if="sent" class="notice leaf" role="status">{{ sent }}</p>
-          <button class="btn primary" type="submit" :disabled="busy || !normalized || !amountValid || coins < parsedAmount">{{ busy ? 'Sending…' : pendingClientId ? 'Retry same transfer' : 'Send game coins' }}</button>
+          <button class="btn primary" type="submit" :disabled="busy || !normalized || !amountValid || balance < parsedAmount">{{ busy ? 'Sending…' : pendingClientId ? 'Retry same transfer' : 'Send naira' }}</button>
         </form>
-        <p class="tiny muted">BeninBank only sends. There is no Request Money feature.</p>
+        <p class="tiny muted">BeninBank only sends naira. There is no Request Money feature.</p>
       </section>
 
       <section class="stack" aria-labelledby="history-heading">
@@ -85,7 +85,7 @@ async function refresh(): Promise<void> { await Promise.all([loadTravel(), histo
           <li v-for="entry in entries" :key="entry.id" class="history-row">
             <span class="transfer-mark" :class="entry.direction === 'in' ? 'in' : 'out'" aria-hidden="true">{{ entry.direction === 'in' ? '↓' : '↑' }}</span>
             <span class="grow"><strong>{{ entry.direction === 'in' ? 'From' : 'To' }} {{ entry.counterpartyUsername }}</strong><small class="muted">{{ when(entry.at) }} · Ref {{ entry.id }}</small></span>
-            <strong class="num" :class="entry.direction === 'in' ? 'incoming' : 'outgoing'">{{ signedCoins(entry.direction === 'in' ? entry.amount : -entry.amount) }}</strong>
+            <strong class="num" :class="entry.direction === 'in' ? 'incoming' : 'outgoing'">{{ signedNaira(entry.direction === 'in' ? entry.amount : -entry.amount) }}</strong>
           </li>
         </ol>
       </section>

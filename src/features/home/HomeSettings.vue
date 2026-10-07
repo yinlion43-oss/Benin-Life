@@ -32,6 +32,7 @@ async function setPolicy(policy: VisitPolicy): Promise<void> {
   }
 }
 const property = useLoad(() => api('property.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
+const portfolio = useLoad(() => api('property.portfolio', {}), [() => app.changed.homes, () => app.changed.notifications])
 const rent = useLoad(() => api('rental.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
 const weeklyRent = ref<string | number>(100)
 const tenantUsername = ref('')
@@ -94,6 +95,15 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
     </fieldset>
 
     <HomePlacement :studio="studio" />
+
+    <section class="card stack">
+      <div class="row">
+        <span class="grow"><strong>My property portfolio</strong><span class="muted small">You can own up to 5 properties. Your primary home remains your everyday home.</span></span>
+        <strong>{{ portfolio.data.value?.homes.length ?? 0 }}/5</strong>
+      </div>
+      <StateView v-if="portfolio.state.value !== 'ready'" :state="portfolio.state.value" :message="portfolio.error.value" @retry="portfolio.reload" />
+      <ul v-else class="days"><li v-for="home in portfolio.data.value?.homes ?? []" :key="home.homeId"><span>{{ home.primary ? '🏠 Primary home' : '🏡 Investment property' }} · {{ home.homeId }}</span></li></ul>
+    </section>
 
     <section class="card stack">
       <div class="row">

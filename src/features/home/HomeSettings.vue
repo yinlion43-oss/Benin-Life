@@ -31,9 +31,26 @@ async function setPolicy(policy: VisitPolicy): Promise<void> {
     if (world.kind === 'home' && world.home?.id === result.home.id) world.home = result.home
   }
 }
+const property = useLoad(() => api('property.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
 const rent = useLoad(() => api('rental.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
 const weeklyRent = ref<string | number>(100)
 const tenantUsername = ref('')
+const saleBuyerUsername = ref('')
+const salePrice = ref<string | number>(100000)
+
+async function sellProperty(): Promise<void> {
+  if (!saleBuyerUsername.value.trim()) return
+  const result = await attempt('property.sellOffer', { homeId: state.home.id, buyerUsername: saleBuyerUsername.value.trim(), price: Number(salePrice.value) }, 'Sale offer sent.')
+  if (result) { saleBuyerUsername.value = ''; await property.reload() }
+}
+async function acceptPropertySale(homeId: string): Promise<void> {
+  const result = await attempt('property.acceptSale', { homeId }, 'Property purchased and bank payment completed.')
+  if (result) { await property.reload(); await rent.reload() }
+}
+async function cancelPropertySale(homeId: string): Promise<void> {
+  const result = await attempt('property.cancelSale', { homeId }, 'Sale offer cancelled.')
+  if (result) await property.reload()
+}
 
 async function listRental(): Promise<void> {
   const result = await attempt('rental.list', { weeklyRent: Number(weeklyRent.value) }, 'Property listed for rent.')
@@ -77,6 +94,28 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
     </fieldset>
 
     <HomePlacement :studio="studio" />
+
+    <section class="card stack">
+      <div class="row">
+        <span class="grow"><strong>Buy / sell property</strong><span class="muted small">Sell your current home to another player, or accept a sale offered to your @username.</span></span>
+      </div>
+      <StateView v-if="property.state.value !== 'ready'" :state="property.state.value" :message="property.error.value" @retry="property.reload" />
+      <template v-else>
+        <form class="row wrap" @submit.prevent="sellProperty">
+          <input v-model="saleBuyerUsername" class="input" maxlength="21" placeholder="@buyer_username" aria-label="Buyer username" required />
+          <input v-model="salePrice" class="input" type="number" min="1" step="1" aria-label="Sale price" required />
+          <button class="btn sm" type="submit">Offer property</button>
+        </form>
+        <div v-for="offer in property.data.value?.selling ?? []" :key="offer.homeId" class="list-row">
+          <span class="grow"><strong>Sale offer to {{ offer.buyerUsername }}</strong><span class="muted tiny">🪙 {{ offer.price }}</span></span>
+          <button class="btn sm" type="button" @click="cancelPropertySale(offer.homeId)">Cancel</button>
+        </div>
+        <div v-for="offer in property.data.value?.buying ?? []" :key="offer.homeId" class="list-row">
+          <span class="grow"><strong>Property offered to you</strong><span class="muted tiny">🪙 {{ offer.price }} · seller sale</span></span>
+          <button class="btn sm" type="button" @click="acceptPropertySale(offer.homeId)">Buy property</button>
+        </div>
+      </template>
+    </section>
 
     <section class="card stack">
       <div class="row">

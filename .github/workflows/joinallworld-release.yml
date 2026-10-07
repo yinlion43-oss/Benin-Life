@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   package:
+    if: github.repository == 'kromate/allworld'
     name: Check and seal new game
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -91,7 +92,7 @@ jobs:
   deploy:
     name: Deploy only joinallworld-next
     needs: package
-    if: inputs.deploy && github.ref == 'refs/heads/main'
+    if: github.repository == 'kromate/allworld' && inputs.deploy && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production

@@ -13,7 +13,7 @@ import type { World } from './kernel.ts'
 import { requireFound } from './kernel.ts'
 import { FRIENDS_AUTOMATIC_LISTED } from '../src/shared/creator.ts'
 import {
-  addFriendship, allMemberIds, areFriends, automaticFriendsOf, exists, freshArea, friendCounts, friendsOf, isBlockedEitherWay, onBlock, publicMember, record,
+  addFriendship, allMemberIds, areFriends, automaticFriendsOf, beninLifeReady, exists, freshArea, friendCounts, friendsOf, isBlockedEitherWay, onBlock, publicMember, record,
   removeFriendship, setIntroRelation, tryPublicMember,
 } from './members.ts'
 import { emit, settle } from './notify.ts'
@@ -206,7 +206,7 @@ export function registerSocial(world: World): void {
       let reason: NearbyMember['reason'] | null = null
       if (mine && discoverable && theirs && optedIn && near.has(theirs.areaId)) reason = theirs.areaId === mine.areaId ? 'same-area' : 'neighbouring-area'
       else if (sharedCommunities.length) reason = 'shared-community'
-      if (!reason || !record(world, other).profile.onboardedAt) continue
+      if (!reason || !beninLifeReady(world, other)) continue
       members.push({ ...publicMember(world, ctx.memberId, other), reason, sharedCommunities })
     }
     const order = { 'same-area': 0, 'neighbouring-area': 1, 'shared-community': 2 }

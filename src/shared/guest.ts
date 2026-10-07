@@ -87,7 +87,7 @@ export const GUEST_OPS = {
     'vehicle.quote', 'vehicle.book', 'vehicle.depart', 'vehicle.cancelTrip', 'vehicle.destination', 'vehicle.ackTransfer', 'vehicle.resume',
   ],
   customise: [
-    'member.saveProfile', 'member.savePreferences', 'member.clearFace', 'home.get', 'home.save', 'home.move',
+    'member.usernameAvailable', 'member.saveProfile', 'beninLife.initialize', 'member.savePreferences', 'member.clearFace', 'home.get', 'home.save', 'home.move',
     'home.catalog', 'home.estate', 'home.quote', 'home.commit', 'home.sites', 'home.setSite',
   ],
   work: ['work.places', 'work.start', 'work.answer', 'work.leave', 'work.career'],

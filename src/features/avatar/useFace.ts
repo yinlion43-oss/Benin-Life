@@ -59,7 +59,7 @@ export function useFace() {
   }
 
   const setAudience = (audience: FaceAudience): Promise<boolean> => run(async () => (await api('member.setFaceAudience', { audience })).profile,
-    audience === 'friends' ? 'Only friends see your photo face now.' : 'Other players in Allworld can see your photo face now.')
+    audience === 'friends' ? 'Only friends see your photo face now.' : 'Other players in Benin Life can see your photo face now.')
 
   const clear = (): Promise<boolean> => run(async () => (await api('member.clearFace', {})).profile, 'Photo face removed.', () => { loads++; scan.value = null })
 

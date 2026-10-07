@@ -31,6 +31,7 @@ export const NAV: readonly NavItem[] = [
   { to: '/market', label: 'Market', glyph: 'bag', key: '7' },
   { to: '/jobs', label: 'Jobs', glyph: 'clipboard', key: '8' },
   { to: '/map', label: 'Map', glyph: 'map', key: '', menuOnly: true },
+  { to: '/phone', label: 'Phone', glyph: 'phone', key: '' },
   { to: '/settings', label: 'Settings', glyph: 'sliders', key: ',', menuOnly: true },
   { to: '/feedback', label: 'Feedback', glyph: 'note', key: '', menuOnly: true },
 ]

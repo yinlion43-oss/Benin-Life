@@ -3,6 +3,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { EXTERNAL_CHANNELS, NOTIFY_CATEGORIES } from '../../shared/notify.ts'
+import { normalizeBeninUsername, PLAYER_TRAITS, PERKS } from '../../shared/beninLife.ts'
 import type { Channel, ExternalChannel, NotifyCategory, NotifyPrefs } from '../../shared/notify.ts'
 import { WorldError } from '../../shared/model.ts'
 import type { AreaSource, AvatarLook, CoarseArea, FaceAudience, MemberPreferences, MemberProfile } from '../../shared/model.ts'
@@ -65,6 +66,15 @@ async function reread(mine: () => boolean): Promise<void> {
 // ── Character ──
 const look = ref<AvatarLook>(copy(me.value.look))
 const displayName = ref(me.value.displayName)
+const beninSkills = computed<[string, number][]>(() => {
+  const skills = me.value.beninLife?.skills
+  return skills ? Object.entries(skills) as [string, number][] : []
+})
+const traitName = (id: string): string => PLAYER_TRAITS.find(trait => trait.id === id)?.label ?? id
+const perkName = (id: string): string => PERKS.find(perk => perk.id === id)?.label ?? id
+const perkEffect = (id: string): string => PERKS.find(perk => perk.id === id)?.effect ?? ''
+const usernameLocked = computed(() => Boolean(me.value.username && me.value.onboardedAt))
+const usernameValid = computed(() => Boolean(normalizeBeninUsername(displayName.value)))
 const bio = ref(me.value.bio)
 const savingProfile = ref(false)
 const face = useFace()
@@ -215,14 +225,31 @@ watch(() => app.me?.look, value => { if (value && !profileDirty.value) look.valu
     <!-- Character -->
     <template v-if="tab === 'character'">
       <div class="row wrap">
-        <label class="field grow" style="min-width: 180px"><span>Name others see</span><input v-model="displayName" class="input" maxlength="32" /></label>
+        <label class="field grow" style="min-width: 180px"><span>Unique @username</span><input v-model="displayName" class="input" maxlength="21" autocomplete="username" autocapitalize="none" spellcheck="false" :disabled="usernameLocked" /><small v-if="usernameLocked" class="muted">This handle is permanent after your character starts.</small></label>
         <label class="field grow" style="min-width: 220px"><span>About you (optional)</span><input v-model="bio" class="input" maxlength="160" placeholder="A line others can read" /></label>
       </div>
+      <section v-if="me.beninLife" class="card stack tight tint-amber" aria-labelledby="story-heading">
+        <div class="row wrap">
+          <div class="grow">
+            <h3 id="story-heading" style="margin: 0">Your story</h3>
+            <p class="muted small" style="margin: 4px 0 0">The starting character you made for Benin Life.</p>
+          </div>
+          <span class="chip amber">{{ me.beninLife.lifeStatus }}</span>
+        </div>
+        <div class="row wrap">
+          <div class="grow"><span class="tiny muted">TRAITS</span><div><strong>{{ traitName(me.beninLife.traits[0]) }} · {{ traitName(me.beninLife.traits[1]) }}</strong></div></div>
+          <div class="grow"><span class="tiny muted">BIG DREAM</span><div><strong>{{ me.beninLife.dream }}</strong></div></div>
+        </div>
+        <div v-if="me.beninLife.perks.length" class="small"><strong>{{ perkName(me.beninLife.perks[0]!) }}</strong><span class="muted"> · {{ perkEffect(me.beninLife.perks[0]!) }}</span></div>
+        <div class="story-skills" aria-label="Starting skills">
+          <div v-for="[skill, value] in beninSkills" :key="skill" class="story-skill"><span>{{ skill }}</span><strong>{{ value }}</strong></div>
+        </div>
+      </section>
       <AvatarEditor v-model:look="look" :face="face.scan.value" :face-busy="face.busy.value || savingProfile" :allow-photo-face="!app.guest" :country-code="(me.browsing ?? me.currentArea)?.countryCode" :place-label="(me.browsing ?? me.currentArea)?.label" @set-face="setFace" @set-face-audience="setFaceAudience" @clear-face="clearFace" />
       <div class="savebar" :class="{ dirty: profileDirty }">
         <span class="grow small">{{ profileDirty ? 'Unsaved changes to your character' : 'Your character is saved' }}</span>
         <button class="btn sm" type="button" :disabled="!profileDirty || savingProfile || face.busy.value" @click="discardProfile">Discard</button>
-        <button class="btn primary sm" type="button" :disabled="!profileDirty || savingProfile || face.busy.value || displayName.trim().length < 2" @click="saveProfile">{{ savingProfile ? 'Saving…' : 'Save character' }}</button>
+        <button class="btn primary sm" type="button" :disabled="!profileDirty || savingProfile || face.busy.value || !usernameValid" @click="saveProfile">{{ savingProfile ? 'Saving…' : 'Save character' }}</button>
       </div>
     </template>
 
@@ -262,9 +289,9 @@ watch(() => app.me?.look, value => { if (value && !profileDirty.value) look.valu
       <div class="card stack tight">
         <strong>Your face from a photo</strong>
         <template v-if="me.look.face">
-          <span class="muted small">{{ me.look.face.audience === 'friends' ? 'Only friends see it. Everyone else sees the character’s own face.' : 'Other players in Allworld can see it.' }}</span>
+          <span class="muted small">{{ me.look.face.audience === 'friends' ? 'Only friends see it. Everyone else sees the character’s own face.' : 'Other players in Benin Life can see it.' }}</span>
           <div class="row wrap">
-            <button class="btn sm" type="button" :disabled="face.busy.value" @click="setFaceAudience(me.look.face.audience === 'friends' ? 'everyone' : 'friends')">{{ me.look.face.audience === 'friends' ? 'Show it to everyone in Allworld' : 'Show it to friends only' }}</button>
+            <button class="btn sm" type="button" :disabled="face.busy.value" @click="setFaceAudience(me.look.face.audience === 'friends' ? 'everyone' : 'friends')">{{ me.look.face.audience === 'friends' ? 'Show it to everyone in Benin Life' : 'Show it to friends only' }}</button>
             <button class="btn sm danger" type="button" :disabled="face.busy.value" @click="clearFace">Remove and delete it</button>
           </div>
         </template>
@@ -460,6 +487,8 @@ watch(() => app.me?.look, value => { if (value && !profileDirty.value) look.valu
 .power { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; max-width: 460px; }
 .savebar { position: sticky; bottom: -22px; margin: auto -18px -22px; padding: 10px 18px calc(12px + var(--safe-bottom)); display: flex; align-items: center; gap: 8px; background: var(--surface); border-top: 1px solid var(--line); z-index: 2; }
 .savebar.dirty { background: var(--accent-soft); border-top-color: #f4dfae; }
+.story-skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
+.story-skill { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 34px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 9px; background: rgb(255 255 255 / 68%); font-size: 0.82rem; }
 .plain { list-style: none; margin: 0; padding: 0; }
 .plain .list-row + .list-row { border-top: 1px solid var(--line); }
 .linklike { border: 0; background: none; padding: 0; color: var(--accent-text); text-decoration: underline; }

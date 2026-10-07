@@ -17,6 +17,7 @@ import { registerComeback } from './comeback.ts'
 import { registerArena } from './arena/index.ts'
 import { registerStreetEntry } from './streetEntry.ts'
 import { registerVehicles } from './vehicles.ts'
+import { registerBusiness } from './business.ts'
 
 export function createWorld(options: WorldOptions = {}): World {
   const world = new World(options)
@@ -26,6 +27,7 @@ export function createWorld(options: WorldOptions = {}): World {
   registerSocial(world)
   registerHomes(world)
   registerWork(world)
+  registerBusiness(world)
   registerGames(world)
   registerMarket(world)
   registerJobs(world)

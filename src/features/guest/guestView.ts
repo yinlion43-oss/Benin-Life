@@ -1,5 +1,5 @@
 // What the guest windows show, in the shape they show it, and the words they use. The shell fills
-// these from the guest contract (src/shared/guest.ts) and the Allworld runtime; nothing here calls
+// these from the guest contract (src/shared/guest.ts) and the game runtime; nothing here calls
 // the service, reads storage or signs anyone in. docs/GUEST-UX.md lists the hooks.
 import type { InjectionKey, Ref } from 'vue'
 import type { MemberId } from '../../shared/ids.ts'
@@ -10,7 +10,7 @@ import type { GuestGate, GuestStatus, SavedCharacter } from '../../shared/guest.
 /** A character as a window shows it. A `SavedCharacter` from a claim conflict fits as it is. */
 export interface GuestCharacter { memberId?: MemberId; displayName: string; look: AvatarLook }
 
-/** Whether Allworld sign-in can be started from where the App is running. */
+/** Whether account sign-in can be started from where the App is running. */
 export type GuestSignIn = 'available' | 'unavailable'
 
 export interface GuestSessionView {
@@ -33,7 +33,7 @@ export type ClaimFailure = 'sign-in-cancelled' | 'sign-in-unavailable' | 'offlin
 /** `claimed` and `conflict` are only ever set from the service's `GuestClaimResult`. */
 export type ClaimState =
   | { kind: 'idle' }
-  /** Waiting on Allworld sign-in. */
+  /** Waiting on account sign-in. */
   | { kind: 'signing-in' }
   /** The service has the request and has not answered. */
   | { kind: 'claiming' }
@@ -59,7 +59,7 @@ export interface GuestController {
   claim: Readonly<Ref<ClaimState>>
   /** The conflict choice being applied. */
   busy: Readonly<Ref<'use-saved' | 'keep-guest' | null>>
-  /** Start Allworld sign-in, then the claim. */
+  /** Start account sign-in, then the claim. */
   save(): void
   /** Stop waiting for sign-in. Nothing is claimed afterwards, whatever the sign-in goes on to do. */
   cancel(): void
@@ -116,7 +116,7 @@ export function timeLeft(until: string | null | undefined, now: number): { text:
 export function endedText(ended: GuestEnded): string {
   return ended === 'expired'
     ? 'Your guest character has expired. The guest session on this device ran out before it was saved, so that character cannot be reopened by anyone.'
-    : 'Your guest character can no longer be opened here: the world ended or refused its guest session. If you saved that character to an account, sign in to Allworld to open it.'
+    : 'Your guest character can no longer be opened here: the world ended or refused its guest session. If you saved that character to an account, sign in to Benin Life to open it.'
 }
 export const GUEST_KEPT_LINE = 'Your guest character is still kept on this device.'
 
@@ -138,7 +138,7 @@ export function failureView(reason: ClaimFailure): FailureView {
     // The service gives these two codes for the account's proof and for the guest session alike,
     // so the window does not say which it was and does not treat the guest as gone.
     case 'expired': return { title: 'The save ran out of time', advice: 'The sign-in or the guest session expired before the world answered. Nothing was moved.', next: 'retry' }
-    case 'unauthorized': return { title: 'The save was not accepted', advice: 'Either Allworld could not confirm your account, or this guest session is no longer valid. Nothing was moved.', next: 'retry' }
+    case 'unauthorized': return { title: 'The save was not accepted', advice: 'Benin Life could not confirm your account, or this guest session is no longer valid. Nothing was moved.', next: 'retry' }
     case 'rate_limited': return { title: 'Too many tries just now', advice: 'Nothing was moved. Wait a minute, then try again.', next: 'retry' }
     case 'unavailable': return { title: 'The world cannot save right now', advice: 'Nothing was moved. You are still playing as a guest.', next: 'retry' }
     case 'service': return { title: 'The save did not go through', advice: 'Nothing was moved. You are still playing as a guest.', next: 'retry' }

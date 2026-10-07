@@ -92,7 +92,7 @@ function careerOf(world: World, memberId: MemberId): CareerRecord {
 /** Game points from play (work shifts, games). Not credits and not money. */
 export const careerPoints = (world: World, memberId: MemberId): number => state(world).careers[memberId]?.points ?? 0
 
-export function addPoints(world: World, memberId: MemberId, points: number, earned?: { kind: 'work' | 'game' | 'gift'; text: string }): void {
+export function addPoints(world: World, memberId: MemberId, points: number, earned?: { kind: 'work' | 'game' | 'gift' | 'business'; text: string }): void {
   if (!(points > 0)) return
   careerOf(world, memberId).points += Math.floor(points)
   world.touch()
@@ -100,9 +100,9 @@ export function addPoints(world: World, memberId: MemberId, points: number, earn
   if (earned) earningHook(world, memberId, Math.floor(points), earned.kind, earned.text)
 }
 
-let earningHook: (world: World, memberId: MemberId, amount: number, kind: 'work' | 'game' | 'gift', text: string) => void = () => undefined
+let earningHook: (world: World, memberId: MemberId, amount: number, kind: 'work' | 'game' | 'gift' | 'business', text: string) => void = () => undefined
 export function setEarningHook(hook: typeof earningHook): void { earningHook = hook }
-let spendingHook: (world: World, memberId: MemberId, amount: number, kind: 'food', text: string) => void = () => undefined
+let spendingHook: (world: World, memberId: MemberId, amount: number, kind: 'food' | 'business', text: string) => void = () => undefined
 export function setSpendingHook(hook: typeof spendingHook): void { spendingHook = hook }
 /** Told when a shift closes, after its pay is in the balance. `points` is what the shift paid. */
 type ShiftClosed = (world: World, memberId: MemberId, shift: { status: 'completed' | 'left-early' | 'timed-out'; points: number }) => void
@@ -114,7 +114,7 @@ export const setShiftClosedHook = onShiftClosed
 
 /** Pay for something with game points. The balance never goes below zero: too little refuses the whole amount. */
 /** `spent` writes the purchase into the wallet history (the caller that keeps its own history leaves it out). */
-export function spendPoints(world: World, memberId: MemberId, amount: number, spent?: { kind: 'food'; text: string }): void {
+export function spendPoints(world: World, memberId: MemberId, amount: number, spent?: { kind: 'food' | 'business'; text: string }): void {
   if (!Number.isFinite(amount) || amount < 0) throw new WorldError('invalid', 'That amount is not valid.')
   const cost = Math.ceil(amount)
   if (cost === 0) return

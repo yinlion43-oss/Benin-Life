@@ -26,7 +26,7 @@ import { conversationPeer, deliverAutomatic } from './direct.ts'
 import type { GuestService, VerifiedPrincipal } from './guests.ts'
 import type { World } from './kernel.ts'
 import {
-  addTaggedFriendship, allMemberIds, areFriends, creatorOf, exists, friendTag, isBlockedEitherWay, onBlock, onOnboarded, onUnfriend, publicMember,
+  addTaggedFriendship, allMemberIds, areFriends, beninLifeReady, creatorOf, exists, friendTag, isBlockedEitherWay, onBlock, onOnboarded, onUnfriend, publicMember,
   record, setCreator, tryPublicMember,
 } from './members.ts'
 import { empty } from './parse.ts'
@@ -142,12 +142,12 @@ export function registerCreator(world: World, options: { guests: Pick<GuestServi
     const memberId = creatorOf(world)
     return memberId && saved()?.account === accountKey && exists(world, memberId) ? memberId : null
   }
-  const ready = (memberId: MemberId): boolean => record(world, memberId).profile.onboardedAt !== null
+  const ready = (memberId: MemberId): boolean => beninLifeReady(world, memberId)
 
   function due(memberId: MemberId, creatorId: MemberId): boolean {
     if (memberId === creatorId || !exists(world, memberId)) return false
     const { onboardedAt } = record(world, memberId).profile
-    if (!onboardedAt || (since !== null && ms(onboardedAt) < since)) return false
+    if (!beninLifeReady(world, memberId) || !onboardedAt || (since !== null && ms(onboardedAt) < since)) return false
     const data = saved()
     if (data?.welcomed[memberId] || data?.removed[memberId]) return false
     if (isBlockedEitherWay(world, memberId, creatorId)) return false

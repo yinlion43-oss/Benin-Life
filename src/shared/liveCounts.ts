@@ -1,4 +1,4 @@
-/** Allworld service totals. No member records or request identifiers cross this contract. */
+/** Hosted service totals. No member records or request identifiers cross this contract. */
 export interface LiveCountsSnapshot {
   scope: 'hosted-world'
   totalViews: number
@@ -13,7 +13,7 @@ export interface LiveCountsOps {
   'counts.owner': { in: Record<string, never>; out: { owner: boolean } }
   'counts.history': { in: Record<string, never>; out: CountsHistory }
 }
-export const COUNTS_SCOPE = 'Page views for this hosted Allworld App and channel since counting began, including the welcome page. These are views, not unique visitors. Refreshes and new tabs add views; panels and socket reconnects do not. Online players are unique authenticated guest or account characters connected or recently present in this world. Scenery, NPCs and local test actors never count as players.'
+export const COUNTS_SCOPE = 'Page views for this hosted Benin Life App and channel since counting began, including the welcome page. These are views, not unique visitors. Refreshes and new tabs add views; panels and socket reconnects do not. Online players are unique authenticated guest or account characters connected or recently present in this world. Scenery, NPCs and local test actors never count as players.'
 
 export function isLiveCountsSnapshot(value: unknown): value is LiveCountsSnapshot {
   if (!value || typeof value !== 'object') return false

@@ -1,10 +1,12 @@
 // Members: profile, avatar look, the coarse current area, blocks and reports.
 import { parseAvatarAppearance } from '../src/shared/appearance.ts'
+import { BIG_DREAMS, LIFE_STATUSES, PERK_IDS, PLAYER_TRAITS, STARTING_SKILLS, normalizeBeninUsername } from '../src/shared/beninLife.ts'
+import type { BigDream, BeninCharacter, LifeStatus, PerkId, PlayerTraitId } from '../src/shared/beninLife.ts'
 import type { AreaId, HomeId, Iso, MemberId, ReportId, RoomKey } from '../src/shared/ids.ts'
 import { iso, ms, newId } from '../src/shared/ids.ts'
 import { areaIdOf, areaOfDistrict, districtIdOf, parseAreaId, parseDistrictId } from '../src/shared/geo.ts'
 import {
-  AVATAR_BODIES, AVATAR_HEIGHT, CURRENT_AREA_TTL_DAYS, FACE_LANDMARKS, FACE_TEXTURE_MAX_BYTES, REPORT_REASONS, USERNAME_PATTERN,
+  AVATAR_BODIES, AVATAR_HEIGHT, CURRENT_AREA_TTL_DAYS, FACE_LANDMARKS, FACE_TEXTURE_MAX_BYTES, REPORT_REASONS,
   WorldError,
 } from '../src/shared/model.ts'
 import type {
@@ -60,7 +62,8 @@ export function ensureMember(world: World, memberId: MemberId, displayName: stri
   }
   const created: MemberRecord = {
     profile: {
-      id: memberId, username: normalizeUsername(displayName, memberId), displayName: `@${normalizeUsername(displayName, memberId)}`, bio: '', look: structuredClone(DEFAULT_LOOK), preferences: { ...DEFAULT_PREFERENCES },
+      id: memberId, displayName, bio: '', look: structuredClone(DEFAULT_LOOK), preferences: { ...DEFAULT_PREFERENCES },
+      username: null, beninLife: null,
       currentArea: null, browsing: null, homeId: `h_${memberId.slice(2)}` as HomeId, onboardedAt: null,
       createdAt: iso(world.now()), revision: 1,
     },
@@ -71,20 +74,22 @@ export function ensureMember(world: World, memberId: MemberId, displayName: stri
   return created
 }
 
-function normalizeUsername(value: string, memberId: MemberId): string {
-  const base = value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24)
-  if (base.length >= 3 && USERNAME_PATTERN.test(base)) return base
-  return `player_${memberId.replace(/[^a-z0-9]/gi, '').slice(-12)}`.slice(0, 24)
-}
-
 export function record(world: World, memberId: MemberId): MemberRecord {
   const found = state(world).members[memberId]
   if (!found) throw new WorldError('not_found', 'That member was not found.')
-  // Migrate older profiles into the Benin Life @username identity without losing their character.
+  // Migrate older profiles onto Benin Life's public @username identity without discarding their character.
   if (!found.profile.username) {
-    const migrated = normalizeUsername(found.profile.displayName, memberId)
-    found.profile.username = migrated
-    found.profile.displayName = `@${migrated}`
+    const suffix = memberId.replace(/[^a-z0-9]/gi, '').slice(-6).toLowerCase()
+    const raw = found.profile.displayName.trim().replace(/^@/, '').toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 20)
+    const base = raw.length >= 3 ? raw : `player_${suffix}`
+    const taken = (username: string): boolean => Object.values(state(world).members)
+      .some(entry => entry.profile.id !== memberId && entry.profile.username?.toLowerCase() === username.toLowerCase())
+    let username = normalizeBeninUsername(base) ?? `@player_${suffix}`
+    if (taken(username)) username = normalizeBeninUsername(`${base.slice(0, 12)}_${suffix}`) ?? `@player_${suffix}`
+    for (let n = 2; taken(username); n++) username = `@player_${suffix}_${n}`.slice(0, 20)
+    found.profile.username = username
+    found.profile.displayName = username
     found.profile.revision++
     world.touch()
   }
@@ -95,6 +100,20 @@ export function record(world: World, memberId: MemberId): MemberRecord {
 
 export const exists = (world: World, memberId: MemberId): boolean => memberId in state(world).members
 export const allMemberIds = (world: World): MemberId[] => Object.keys(state(world).members) as MemberId[]
+export function beninLifeReady(world: World, memberId: MemberId): boolean {
+  const profile = state(world).members[memberId]?.profile
+  return Boolean(profile?.onboardedAt && profile.username && profile.beninLife)
+}
+
+/** Resolve a registered Benin Life handle for service-to-service transactions; incomplete profiles never receive transfers. */
+export function memberByBeninUsername(world: World, username: string): MemberId | null {
+  const wanted = username.toLowerCase()
+  for (const [memberId, entry] of Object.entries(state(world).members)) {
+    const id = memberId as MemberId
+    if (entry.profile.username?.toLowerCase() === wanted && beninLifeReady(world, id)) return id
+  }
+  return null
+}
 
 export function isBlockedEitherWay(world: World, a: MemberId, b: MemberId): boolean {
   if (a === b) return false
@@ -208,6 +227,7 @@ export function relation(world: World, viewer: MemberId, target: MemberId): Rela
 export function publicMember(world: World, viewer: MemberId, target: MemberId): PublicMember {
   if (isBlockedEitherWay(world, viewer, target)) throw new WorldError('not_found', 'That member was not found.')
   const { profile } = record(world, target)
+  if (!beninLifeReady(world, target)) throw new WorldError('not_found', 'That member was not found.')
   const rel = relation(world, viewer, target)
   const area = freshArea(world, target)
   // The area is for the member, for friends they accepted, and for anyone once they chose to be discoverable.
@@ -215,7 +235,7 @@ export function publicMember(world: World, viewer: MemberId, target: MemberId): 
   const mayShowArea = rel === 'self' || accepted || profile.preferences.discoverable
   const tag = accepted ? null : friendTag(world, viewer, target)
   return {
-    id: profile.id, username: profile.username, displayName: `@${profile.username}`, bio: profile.bio, look: lookFor(world, viewer, target),
+    id: profile.id, displayName: profile.displayName, bio: profile.bio, look: lookFor(world, viewer, target),
     areaLabel: area && mayShowArea ? area.label : null, relation: rel, online: world.isOnline(target),
     ...(tag ? { automatic: tag } : {}),
     ...(state(world).creator === target ? { verified: 'creator' as const } : {}),
@@ -224,7 +244,7 @@ export function publicMember(world: World, viewer: MemberId, target: MemberId): 
 
 /** Same as publicMember, but returns null instead of throwing when the pair is blocked. */
 export function tryPublicMember(world: World, viewer: MemberId, target: MemberId): PublicMember | null {
-  if (!exists(world, target) || isBlockedEitherWay(world, viewer, target)) return null
+  if (!exists(world, target) || !beninLifeReady(world, target) || isBlockedEitherWay(world, viewer, target)) return null
   return publicMember(world, viewer, target)
 }
 
@@ -317,27 +337,70 @@ export function registerMembers(world: World): void {
     return { profile: entry.profile, blocked: blockedList(ctx.memberId), reviewer: entry.reviewer }
   })
 
+  world.register('member.usernameAvailable', value => {
+    const raw = obj(value)
+    const submitted = str(raw, 'username', { min: 3, max: 21 })
+    const username = normalizeBeninUsername(submitted)
+    if (!username) throw new WorldError('invalid', 'Use 3–20 letters, numbers or underscores for your @username.')
+    return { username }
+  }, (ctx, input) => {
+    world.limit(`username-check:${ctx.memberId}`, 12, 60_000)
+    const available = !Object.values(state(world).members).some(other => other.profile.id !== ctx.memberId && other.profile.username?.toLowerCase() === input.username.toLowerCase())
+    return { username: input.username, available }
+  })
+
   world.register('member.saveProfile', value => {
     const raw = obj(value)
+    const displayName = str(raw, 'displayName', { min: 3, max: 21 })
+    const username = normalizeBeninUsername(displayName)
+    if (!username) throw new WorldError('invalid', 'Use 3–20 letters, numbers or underscores for your @username.')
     return {
-      username: str(raw, 'username', { min: 3, max: 24 }), displayName: raw.displayName === undefined ? undefined : str(raw, 'displayName', { min: 2, max: 32 }), bio: str(raw, 'bio', { max: 160 }),
+      displayName: username, bio: str(raw, 'bio', { max: 160 }),
       clearFace: raw.clearFace === undefined ? false : bool(raw, 'clearFace'),
       look: parseLook(raw.look), expectedRevision: num(raw, 'expectedRevision', { integer: true, min: 0 }),
     }
   }, (ctx, input) => {
     const entry = record(world, ctx.memberId)
     if (input.expectedRevision !== entry.profile.revision) throw new WorldError('conflict', 'Your profile changed on another device. Reload it and try again.')
-    const username = input.username.trim().toLowerCase()
-    if (!USERNAME_PATTERN.test(username)) throw new WorldError('invalid', 'Username must be 3–24 characters using lowercase letters, numbers or underscores.')
-    const duplicate = Object.values(state(world).members).find(member => member.profile.id !== ctx.memberId && member.profile.username === username)
-    if (duplicate) throw new WorldError('conflict', 'That @username is already taken.')
-    entry.profile.username = username
-    entry.profile.displayName = `@${username}`
+    if (entry.profile.onboardedAt && entry.profile.username && entry.profile.username.toLowerCase() !== input.displayName.toLowerCase()) {
+      throw new WorldError('conflict', 'Your @username is permanent once your Benin Life begins.')
+    }
+    const collision = Object.values(state(world).members).some(other => other.profile.id !== ctx.memberId && other.profile.username?.toLowerCase() === input.displayName.toLowerCase())
+    if (collision) throw new WorldError('conflict', 'That @username is already taken. Choose another one.')
+    entry.profile.username = input.displayName
+    entry.profile.displayName = input.displayName
     entry.profile.bio = input.bio
     entry.profile.look = { ...input.look, face: input.clearFace ? null : entry.profile.look.face }
     if (input.clearFace) delete faces(world)[ctx.memberId]
     for (const hook of lookHooks) hook(world, ctx.memberId)
     return { profile: bump(ctx.memberId) }
+  })
+
+  world.register('beninLife.initialize', value => {
+    const raw = obj(value)
+    const traits = raw.traits
+    if (!Array.isArray(traits) || traits.length !== 2 || traits[0] === traits[1]
+      || !PLAYER_TRAITS.some(trait => trait.id === traits[0]) || !PLAYER_TRAITS.some(trait => trait.id === traits[1])) {
+      throw new WorldError('invalid', 'Choose two different character traits.')
+    }
+    const dream = oneOf(raw, 'dream', BIG_DREAMS)
+    return { traits: [traits[0] as PlayerTraitId, traits[1] as PlayerTraitId] as [PlayerTraitId, PlayerTraitId], dream }
+  }, (ctx, input) => {
+    const profile = record(world, ctx.memberId).profile
+    if (!profile.username) throw new WorldError('conflict', 'Choose your unique @username first.')
+    if (profile.beninLife) return { profile }
+    const pick = <T,>(items: readonly T[]): T => items[Math.floor(Math.random() * items.length)]!
+    const beninLife: BeninCharacter = {
+      traits: input.traits,
+      dream: input.dream as BigDream,
+      lifeStatus: pick(LIFE_STATUSES) as LifeStatus,
+      skills: { ...STARTING_SKILLS },
+      perks: [pick(PERK_IDS) as PerkId],
+    }
+    profile.beninLife = beninLife
+    profile.revision++
+    world.touch()
+    return { profile }
   })
 
   const audience = (raw: Raw) => oneOf(raw, 'audience', ['friends', 'everyone'] as const)
@@ -416,7 +479,8 @@ export function registerMembers(world: World): void {
 
   world.register('member.completeOnboarding', empty, ctx => {
     const entry = record(world, ctx.memberId)
-    const first = entry.profile.onboardedAt === null
+    if (!entry.profile.username || !entry.profile.beninLife) throw new WorldError('conflict', 'Finish your Benin Life character setup first.')
+    const first = !beninLifeReady(world, ctx.memberId)
     entry.profile.onboardedAt ??= iso(ctx.now)
     const profile = bump(ctx.memberId)
     // Told once per member. A listener that fails is logged and does not undo the onboarding.

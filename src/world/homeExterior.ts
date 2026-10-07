@@ -17,9 +17,9 @@ export function exteriorCameraBuildings(spec: HomeExteriorScenery): Building[] {
 /** Original architecture follows approved shell solids and the approved front door exactly. */
 export function buildHomeExterior(spec: HomeExteriorScenery): { root: THREE.Group; dispose(): void } {
   const root = new THREE.Group()
-  root.name = 'generated-allworld-home'
+  root.name = 'generated-benin-life-home'
   root.userData.buildingId = spec.buildingId
-  root.userData.scenery = 'Original fictional Allworld house; no claim of real property ownership'
+  root.userData.scenery = 'Original fictional Benin Life house; no claim of real property ownership'
   const base = spec.footprints[0]?.pos ?? spec.frontDoor.pos
   root.position.set(base.x, 0.13, base.z)
   const geometries: THREE.BufferGeometry[] = []

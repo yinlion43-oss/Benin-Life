@@ -39,7 +39,7 @@ watch([kind, topic], () => { copied.value = '' })
   <PanelPage :title="FEEDBACK_TITLE">
     <section class="cork" aria-labelledby="feedback-heading">
       <span class="pin" aria-hidden="true"></span>
-      <h2 id="feedback-heading">Help shape Allworld</h2>
+      <h2 id="feedback-heading">Help shape Benin Life</h2>
       <p class="small">What gets built next is talked over on a public board. Read what other players have asked for, vote for what you want, or pin a note of your own.</p>
     </section>
 
@@ -57,7 +57,7 @@ watch([kind, topic], () => { copied.value = '' })
       <template v-if="board.embed">
         <button v-if="!showing" class="btn primary go" type="button" @click="showing = true">Show the board here</button>
         <iframe
-          v-else class="frame" :src="board.embed" title="Allworld feedback board on Feedback Studio" loading="lazy"
+          v-else class="frame" :src="board.embed" title="Benin Life feedback board" loading="lazy"
           referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
         ></iframe>
         <a class="small out" :href="target" target="_blank" rel="noopener noreferrer">Open the board in a new tab instead<span aria-hidden="true"> ↗</span></a>

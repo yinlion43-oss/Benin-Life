@@ -27,12 +27,13 @@ export interface FeedbackBoardConfig {
 
 /** Board and sharing policy verified in Feedback Studio; visitor form review is recorded separately. */
 export const feedbackBoard: FeedbackBoardConfig = {
-  boardUrl: 'https://feedback-studio.apps.goalmatic.io/b/allworld#zbHa8lqU0p8rDY1LdOEbYWrh6tHfkhqudJEygMwst6o',
+  // Benin Life has no verified public board yet; never send players to the upstream project's board.
+  boardUrl: null,
   embedUrl: null,
   ideaUrl: null,
   problemUrl: null,
-  guestPosting: true,
-  verifiedOn: '2026-10-02',
+  guestPosting: null,
+  verifiedOn: null,
 }
 
 /** The only hosts a board address may name. */

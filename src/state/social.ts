@@ -123,7 +123,7 @@ function scheduleAround(wait = 400): void {
   if (aroundTimer || !open('around.get')) return
   aroundTimer = setTimeout(() => { aroundTimer = null; if (ready()) void refreshAround() }, wait)
 }
-const ready = (): boolean => app.phase === 'ready' && Boolean(app.me?.onboardedAt)
+const ready = (): boolean => app.phase === 'ready' && Boolean(app.me?.onboardedAt && app.me.username && app.me.beninLife)
 
 /** Guests have a creator conversation, but cannot use the nearby-people query for its unread count. */
 let guestUnreadRequest = 0

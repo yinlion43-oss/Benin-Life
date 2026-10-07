@@ -2,36 +2,60 @@
 
 **Your Life Creates Your Story.**
 
-This build uses the Allworld Vue 3 + TypeScript + three.js web-game foundation as the starting
-point for Benin Life. The first adaptation establishes the Benin City identity, Benin City as
-the primary starter location, and a data-driven Benin Life gameplay configuration.
+Benin Life is a shared life simulation built on an inherited Vue 3, TypeScript and Three.js
+world architecture. Benin City is the primary starting city. The existing world, map, avatar,
+home, life-needs, work, social, travel, vehicle and persistence systems remain the technical
+foundation; Benin Life rules and content are defined in [`docs/BENIN-LIFE-SYSTEMS.md`](docs/BENIN-LIFE-SYSTEMS.md).
 
-The next implementation phases can build multiplayer economy, phone apps, football, property,
-businesses, jobs, real-time Benin City day/night, social systems, advertising and the remaining
-Benin Life systems on top of this foundation.
+The first-run experience is intended to lead from account and unique `@username` setup into the
+Benin City map, with Map, Phone, Me and Activities as the main destinations. The game does not
+use age or life stages. Everyone begins without player relationships and builds them through
+play. The inherited Apache-2.0 license and third-party notices remain in [`LICENSE`](LICENSE) and
+[`NOTICE`](NOTICE).
 
-# Allworld
+## Current adaptation state
 
-A social world on real maps, built with Vue 3, TypeScript and three.js. Make a character, explore
-public streets, furnish a virtual home, work shifts, play games and travel. Allworld owns its
-guest capabilities and accounts. Running this source does not require a Goalmatic account.
-
-Original code uses Apache-2.0. Media and OpenStreetMap-derived databases keep their terms in
-[NOTICE](NOTICE) and [the asset license record](docs/ASSETS-LICENSES.md).
+- Benin Life name, tagline, title and page metadata are in place; upstream favicon artwork has
+  been removed from the page until Benin Life artwork is supplied.
+- Benin City is the first suggested start location, with Nigeria/NGN and `Africa/Lagos` defaults.
+- First-run onboarding now checks a unique `@username` through the service, then saves appearance,
+  two traits and a Big Dream. The service assigns life status, starting skills and a randomized
+  perk; incomplete profiles are excluded from public-member operations.
+- The Character settings screen now shows that saved Benin Life story and its starting skill levels.
+- The Phone menu now opens a Benin Life app hub. Existing message, contact, job, home, map, social
+  and settings areas are linked. BeninBank sends game coins between completed characters by
+  `@username`, stores paired transaction history, and safely recognizes retries; there is no
+  request-money feature. Scheduled payments, businesses, football, daily activities and advertising
+  are still in development.
+- The authored character options, city places, phone app list, transport options and advertising
+  inventory are centralized in [`src/shared/beninLife.ts`](src/shared/beninLife.ts). Several of
+  those are design data and are not yet connected to playable interfaces.
+- The full agreed product scope and its implementation map are in
+  [`docs/BENIN-LIFE-SYSTEMS.md`](docs/BENIN-LIFE-SYSTEMS.md). BeninBank transfers, branded phone
+  apps, business and property ledgers, football clubs, legal play, paid advertising and city
+  activity simulation remain future service-owned work.
+- Upstream contributor, architecture and operations documents are retained as source history.
+  Their original Allworld-specific deployment guidance does not configure or describe a Benin Life
+  production service.
+- The inherited verification scripts still contain Allworld-era onboarding assumptions; reconcile
+  those probes with the required Benin Life character setup before relying on the full CI `check`
+  workflow. They have not been run for this adaptation.
+- The inherited manual Cloudflare release workflows are guarded to run only in
+  `kromate/allworld`; they are not Benin Life deployment workflows. Set up and review dedicated
+  Benin Life hosting before adding any release path.
 
 ## Build and run locally
 
-Use Node 22.18 or newer and the pinned npm version in package.json.
+Use Node 22.18 or newer and the pinned npm version in `package.json`.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5189/?as=a. Named actors are local development identities. Never expose
-the development listener as public account verification. One state file has one process owner.
-For another local copy, supply distinct STATE_PATH and CACHE_PATH paths outside the export,
-then use NW_STATE and NW_CACHE_DIR with a free port.
+Open the URL Vite prints. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
+[`docs/CONTRIBUTOR-MAP.md`](docs/CONTRIBUTOR-MAP.md) before changing a subsystem. The service
+must own shared outcomes such as balances, jobs, property, relationships, matches and campaigns.
 
 ```sh
 npm run typecheck
@@ -42,37 +66,6 @@ npm run verify
 npm run build
 ```
 
-Map and optional face-model downloads require network access. No saved world or private photo
-is shipped. Source export and compilation do not prove hosted account or device behavior.
-
-## Run a standalone host
-
-service/hostedStandalone.ts accepts explicit state, origin, audience, build metadata and guest
-admission flags. It binds to loopback by default. No live URL or owner configuration is included.
-
-Accounts use a dedicated Firebase project's email/password provider. The Node listener needs
---firebase-project, --firebase-api-key-file and --session-key-file together. Keep both secret
-files outside the checkout. The 32-byte session key also belongs outside the state folder.
-
-The native Worker uses WORLD_BINDING, WORLD_GUEST_ADMISSION and WORLD_ACCOUNT configuration.
-Server secret names are WORLD_FIREBASE_API_KEY, WORLD_SESSION_KEY and WORLD_IMPORT_SECRET.
-Optional controls include WORLD_CREATOR_CONFIG, WORLD_MAX_CONNECTIONS, WORLD_LEGACY_ORIGIN and
-WORLD_IMPORT_MAX_BYTES. No values, environment files, credentials or import payloads are shipped.
-
-Provisioning and deployment are operator steps. Read [hosting boundaries](docs/HOSTING.md).
-Worker source and compiler inputs are included; their hashes are not deployment receipts.
-
-## Export reviewed source
-
-The local exporter needs Python 3 and Node. It prepares a manifest plan, then writes a deterministic
-source archive only when the current source matches both the reviewed selected tree and complete manifest hashes.
-Use a fresh output directory outside the source tree for each command.
-
-```sh
-node scripts/export-source.mjs --root "$PWD" --output "$PLAN_OUTPUT" --plan
-node scripts/export-source.mjs --root "$PWD" --output "$ARCHIVE_OUTPUT" --expect-tree "$REVIEWED_TREE_SHA256" --expect-manifest "$REVIEWED_MANIFEST_SHA256"
-```
-
-Inspect the plan's export-manifest.json and source-audit.json. The export output adds a verified
-allworld-source.tar.gz. See [the export procedure](docs/SOURCE-EXPORT.md). These commands make
-no remote, account, Git or deployment change.
+No Benin Life production world, payment provider, live credentials or deployment configuration is
+included. The browser's local development actors are not public accounts. Map data and media keep
+their original sources and license terms; do not remove `NOTICE` or the asset records.

@@ -11,8 +11,9 @@ import type { CoarseArea } from './model.ts'
 
 export type TravelMode = 'local' | 'bus' | 'rail' | 'flight'
 
-export type LedgerKind = 'starting' | 'work' | 'game' | 'fare' | 'passport' | 'visa' | 'refund' | 'food' | 'gift' | 'home'
-export interface LedgerEntry { id: string; at: Iso; amount: number; kind: LedgerKind; text: string; balanceAfter: number }
+export type LedgerKind = 'starting' | 'work' | 'game' | 'fare' | 'passport' | 'visa' | 'refund' | 'food' | 'gift' | 'home' | 'business' | 'transfer-in' | 'transfer-out'
+export interface LedgerEntry { id: string; at: Iso; amount: number; kind: LedgerKind; text: string; balanceAfter: number; transferId?: string }
+export interface BankTransfer { id: string; at: Iso; amount: number; direction: 'in' | 'out'; counterpartyUsername: string }
 
 export type DocumentStatus = 'none' | 'processing' | 'valid' | 'expired' | 'refused'
 

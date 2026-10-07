@@ -11,7 +11,7 @@ import type { PublicMember } from './model.ts'
 /** A public place in the game that the creator's welcome may name. Words only, from configuration; never read from anyone's location. */
 export interface CreatorHangout { name: string; areaLabel: string | null }
 
-const WELCOME = 'Hey, welcome to Allworld! I’m Kromit, the creator. Thanks for checking out the game. Message me here if you need help, or drop an idea on the Allworld noticeboard. I’d love to hear what you want us to build next.'
+const WELCOME = 'Welcome to Benin Life! Thanks for joining the city. You can use the in-game help and feedback pages to share questions or ideas.'
 
 /** The welcome as it is stored. It promises nothing about when the creator is around. */
 export function creatorWelcomeText(hangout: CreatorHangout | null): string {
@@ -30,7 +30,7 @@ export const CREATOR_FRIEND_LABEL = 'Automatic friendship with the creator'
 /** Shown with a message whose `automatic` is 'welcome', so nobody takes it for something just typed. */
 export const CREATOR_AUTOMATIC_LABEL = 'Automatic welcome message'
 /** Shown during onboarding, before the connection is made. */
-export const CREATOR_DISCLOSURE = 'When you finish, you are connected to Kromit, the creator of Allworld, and get one automatic welcome message from him. He cannot see your photo, your home or where you are because of it. You can remove or block him at any time.'
+export const CREATOR_DISCLOSURE = 'When you finish, you may be connected to the verified Benin Life creator account and receive one automatic welcome message. This connection does not share your photo, home or whereabouts. You can remove or block the account at any time.'
 
 /**
  * How the viewer stands with the creator.

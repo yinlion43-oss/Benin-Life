@@ -24,7 +24,7 @@ import type {
 
 import type { BankTransfer, LedgerEntry, TravelQuote, TravelState } from './travel.ts'
 import type { BusinessType, PlayerBusiness, BusinessDay } from './business.ts'
-import type { RentalLease } from './rentals.ts'
+import type { RentalLease, PropertySaleOffer } from './rentals.ts'
 
 import type { LifeEvent, LifeOps } from './life.ts'
 import type { ArenaEvent, ArenaOps } from './arena.ts'
@@ -135,6 +135,10 @@ export interface Ops extends LifeOps, DirectOps, ComebackOps, ArenaOps, CreatorO
   'rental.pay': Op<Empty, { lease: RentalLease; balance: number }>
   'rental.end': Op<Empty, { lease: RentalLease }>
   'rental.mine': Op<Empty, { owned: RentalLease[]; rented: RentalLease[] }>
+  'property.sellOffer': Op<{ homeId: HomeId; buyerUsername: string; price: number }, { offer: PropertySaleOffer }>
+  'property.acceptSale': Op<{ homeId: HomeId }, { homeId: HomeId; price: number; balance: number }>
+  'property.cancelSale': Op<{ homeId: HomeId }, { cancelled: true }>
+  'property.mine': Op<Empty, { selling: PropertySaleOffer[]; buying: PropertySaleOffer[] }>
   'travel.quote': Op<{ to: CoarseArea }, { quote: TravelQuote }>
   /** Pays the fare and starts the trip. The avatar arrives when the trip's time is up. */
   'travel.book': Op<{ to: CoarseArea }, { state: TravelState }>

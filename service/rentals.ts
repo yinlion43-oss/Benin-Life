@@ -15,6 +15,8 @@ const key = (homeId: HomeId) => String(homeId)
 const normalize = (value: string): string | null => /^@?[A-Za-z0-9][A-Za-z0-9_]{2,19}$/.test(value.trim()) ? (value.trim().startsWith('@') ? value.trim() : '@' + value.trim()) : null
 const week = 7 * 86_400_000
 
+export function cancelRentalForHome(world: World, homeId: HomeId): void { const lease = state(world).leases[key(homeId)]; if (lease?.active) { lease.active = false; world.touch() } }
+
 export function registerRentals(world: World): void {
   world.onTick(now => {
     for (const lease of Object.values(state(world).leases)) {

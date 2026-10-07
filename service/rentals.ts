@@ -8,12 +8,14 @@ import { careerPoints } from './work.ts'
 import { memberByBeninUsername, beninLifeReady, record } from './members.ts'
 import { transferCoinsByUsername } from './travel.ts'
 import { currentHomeRoom } from './homes.ts'
+import { propertyRentBonus } from './propertyUpgrades.ts'
 
 interface RentalState { leases: Record<string, RentalLease> }
 const state = (world: World): RentalState => world.slice<RentalState>('rentals', () => ({ leases: {} }))
 const key = (homeId: HomeId) => String(homeId)
 const normalize = (value: string): string | null => /^@?[A-Za-z0-9][A-Za-z0-9_]{2,19}$/.test(value.trim()) ? (value.trim().startsWith('@') ? value.trim() : '@' + value.trim()) : null
 const week = 7 * 86_400_000
+const effectiveRent = (world: World, lease: RentalLease): number => lease.weeklyRent + propertyRentBonus(world, lease.homeId)
 
 export function cancelRentalForHome(world: World, homeId: HomeId): void { const lease = state(world).leases[key(homeId)]; if (lease?.active) { lease.active = false; world.touch() } }
 
@@ -24,8 +26,8 @@ export function registerRentals(world: World): void {
       try {
         const tenantId = memberByBeninUsername(world, lease.tenantUsername)
         if (!tenantId) { lease.active = false; continue }
-        if (careerPoints(world, tenantId) < lease.weeklyRent) continue
-        transferCoinsByUsername(world, tenantId, record(world, lease.ownerId).profile.username!, lease.weeklyRent, `Rent · ${lease.homeId}`)
+        if (careerPoints(world, tenantId) < effectiveRent(world, lease)) continue
+        transferCoinsByUsername(world, tenantId, record(world, lease.ownerId).profile.username!, effectiveRent(world, lease), `Rent · ${lease.homeId}`)
         lease.lastPaidAt = iso(now)
         lease.nextDueAt = iso(now + week)
         world.touch()
@@ -93,8 +95,8 @@ export function registerRentals(world: World): void {
     if (!username) throw new WorldError('conflict', 'Set up your unique @username first.')
     const lease = Object.values(state(world).leases).find(item => item.active && item.tenantUsername.toLowerCase() === username.toLowerCase())
     if (!lease) throw new WorldError('not_found', 'You have no active rental.')
-    if (careerPoints(world, ctx.memberId) < lease.weeklyRent) throw new WorldError('conflict', 'Insufficient bank balance for rent.')
-    transferCoinsByUsername(world, ctx.memberId, record(world, lease.ownerId).profile.username!, lease.weeklyRent, `Rent · ${lease.homeId}`)
+    if (careerPoints(world, ctx.memberId) < effectiveRent(world, lease)) throw new WorldError('conflict', 'Insufficient bank balance for rent.')
+    transferCoinsByUsername(world, ctx.memberId, record(world, lease.ownerId).profile.username!, effectiveRent(world, lease), `Rent · ${lease.homeId}`)
     lease.lastPaidAt = iso(ctx.now); lease.nextDueAt = iso(ctx.now + week)
     world.touch()
     return { lease, balance: careerPoints(world, ctx.memberId) }

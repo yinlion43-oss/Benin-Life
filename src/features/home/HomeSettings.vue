@@ -121,7 +121,7 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
       </div>
       <div class="days">
         <div v-for="item in upgradeOptions" :key="item.id" class="list-row">
-          <span class="grow"><strong>{{ item.label }}</strong><span class="muted tiny">🪙 {{ item.price }} · +🪙{{ item.bonus }}/week rental value</span></span>
+          <span class="grow"><strong>{{ item.label }}</strong><span class="muted tiny">₦ {{ item.price }} · +₦{{ item.bonus }}/week rental value</span></span>
           <button class="btn sm" type="button" :disabled="!!homeUpgrades[item.id] || busy" @click="installUpgrade(item.id)">{{ homeUpgrades[item.id] ? 'Installed' : 'Install' }}</button>
         </div>
       </div>
@@ -148,11 +148,11 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
           <button class="btn sm" type="submit">Offer property</button>
         </form>
         <div v-for="offer in property.data.value?.selling ?? []" :key="offer.homeId" class="list-row">
-          <span class="grow"><strong>Sale offer to {{ offer.buyerUsername }}</strong><span class="muted tiny">🪙 {{ offer.price }}</span></span>
+          <span class="grow"><strong>Sale offer to {{ offer.buyerUsername }}</strong><span class="muted tiny">₦ {{ offer.price }}</span></span>
           <button class="btn sm" type="button" @click="cancelPropertySale(offer.homeId)">Cancel</button>
         </div>
         <div v-for="offer in property.data.value?.buying ?? []" :key="offer.homeId" class="list-row">
-          <span class="grow"><strong>Property offered to you</strong><span class="muted tiny">🪙 {{ offer.price }} · seller sale</span></span>
+          <span class="grow"><strong>Property offered to you</strong><span class="muted tiny">₦ {{ offer.price }} · seller sale</span></span>
           <button class="btn sm" type="button" @click="acceptPropertySale(offer.homeId)">Buy property</button>
         </div>
       </template>
@@ -173,11 +173,11 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
           <button class="btn sm" type="submit">Offer to player</button>
         </form>
         <div v-for="lease in rent.data.value?.owned ?? []" :key="lease.homeId" class="list-row">
-          <span class="grow"><strong>{{ lease.tenantUsername || 'Unassigned listing' }}</strong><span class="muted tiny">🪙 {{ lease.weeklyRent }}/week · {{ lease.active ? 'Active' : 'Ended' }}</span></span>
+          <span class="grow"><strong>{{ lease.tenantUsername || 'Unassigned listing' }}</strong><span class="muted tiny">₦ {{ lease.weeklyRent }}/week · {{ lease.active ? 'Active' : 'Ended' }}</span></span>
           <button v-if="lease.active" class="btn sm" type="button" @click="endRental">End rental</button>
         </div>
         <div v-for="lease in rent.data.value?.rented ?? []" :key="lease.homeId" class="list-row">
-          <span class="grow"><strong>Rental home</strong><span class="muted tiny">🪙 {{ lease.weeklyRent }}/week · next due {{ when(lease.nextDueAt) }}</span></span>
+          <span class="grow"><strong>Rental home</strong><span class="muted tiny">₦ {{ lease.weeklyRent }}/week · next due {{ when(lease.nextDueAt) }}</span></span>
           <div class="row wrap">
             <button class="btn sm" type="button" @click="payRent">Pay rent</button>
             <button class="btn sm" type="button" @click="endRental">Leave rental</button>
@@ -191,7 +191,7 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
       <ul class="receipts">
         <li v-for="receipt in state.estate.receipts" :key="receipt.id" class="list-row">
           <span class="grow"><strong class="small" style="display: block">{{ receipt.summary }}</strong><span class="muted tiny">{{ when(receipt.at) }}</span></span>
-          <span class="num small">{{ receipt.total }} coins</span>
+          <span class="num small">{{ receipt.total }} naira</span>
         </li>
       </ul>
     </details>

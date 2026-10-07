@@ -8,6 +8,7 @@ import { careerPoints } from './work.ts'
 import { transferCoinsByUsername } from './travel.ts'
 import { transferHomeOwnership } from './homes.ts'
 import { cancelRentalForHome } from './rentals.ts'
+import { allMemberIds } from './members.ts'
 
 const state = (world: World) => world.slice<{ sales: Record<string, any> }>('propertySales', () => ({ sales: {} }))
 const key = (homeId: HomeId) => String(homeId)
@@ -57,6 +58,12 @@ export function registerProperties(world: World): void {
     delete state(world).sales[key(input.homeId)]
     world.touch()
     return { cancelled: true }
+  })
+
+  world.register('property.portfolio', empty, ctx => {
+    ready(world, ctx.memberId)
+    const ids = record(world, ctx.memberId).profile.ownedHomeIds ?? [record(world, ctx.memberId).profile.homeId]
+    return { homes: ids.map(homeId => ({ homeId, primary: homeId === record(world, ctx.memberId).profile.homeId })) }
   })
 
   world.register('property.mine', empty, ctx => {

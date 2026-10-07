@@ -57,6 +57,7 @@ export function ensureMember(world: World, memberId: MemberId, displayName: stri
   const existing = members[memberId]
   if (existing) {
     // A profile saved before a preference existed gets that preference's default.
+    if (!existing.profile.ownedHomeIds?.length) existing.profile.ownedHomeIds = [existing.profile.homeId]
     if (existing.profile.preferences.powerMode === undefined) existing.profile.preferences = { ...DEFAULT_PREFERENCES, ...existing.profile.preferences }
     return existing
   }
@@ -64,7 +65,7 @@ export function ensureMember(world: World, memberId: MemberId, displayName: stri
     profile: {
       id: memberId, displayName, bio: '', look: structuredClone(DEFAULT_LOOK), preferences: { ...DEFAULT_PREFERENCES },
       username: null, beninLife: null,
-      currentArea: null, browsing: null, homeId: `h_${memberId.slice(2)}` as HomeId, onboardedAt: null,
+      currentArea: null, browsing: null, homeId: `h_${memberId.slice(2)}` as HomeId, ownedHomeIds: [`h_${memberId.slice(2)}` as HomeId], onboardedAt: null,
       createdAt: iso(world.now()), revision: 1,
     },
     blocked: [], friends: [], reviewer: options.reviewer ?? false,

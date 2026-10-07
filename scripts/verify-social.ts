@@ -200,6 +200,10 @@ const yabaStreet: RoomRef = { kind: 'district', districtId: yaba.arrivalDistrict
 const owner = 'm_local_e' as MemberId, guest = 'm_local_f' as MemberId, stranger = 'm_local_g' as MemberId
 for (const [id, name] of [[owner, 'Efe'], [guest, 'Femi'], [stranger, 'Gold']] as const) {
   ensureMember(world, id, name)
+  const profile = record(world, id).profile
+  profile.username = `@${name.toLowerCase()}`
+  profile.displayName = profile.username
+  profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
   world.connect(id, () => undefined, () => undefined)
   world.call(id, 'member.setCurrentArea', { area: yaba, source: 'manual' })
   world.call(id, 'member.completeOnboarding', {})

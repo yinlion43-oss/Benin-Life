@@ -103,6 +103,9 @@ export function transferHomeOwnership(world: World, sellerId: MemberId, buyerId:
   if (occupantsOfRoom(world, roomKey({ kind: 'home', homeId })).length > 0) throw new WorldError('conflict', 'Everyone must leave the property before it can be sold.')
   const sellerProfile = record(world, sellerId).profile
   const buyerProfile = record(world, buyerId).profile
+  const sellerHomes = (sellerProfile.ownedHomeIds ??= [sellerProfile.homeId])
+  const buyerHomes = (buyerProfile.ownedHomeIds ??= [buyerProfile.homeId])
+  if (buyerHomes.length >= 5) throw new WorldError('conflict', 'Your property portfolio is full. The maximum is 5 properties.')
   const replacementHomeId = newId<HomeId>('home')
   state(world).homes[replacementHomeId] = {
     id: replacementHomeId, owner: sellerId, name: `${sellerProfile.displayName}’s place`, districtLabel: 'Not placed yet',
@@ -112,7 +115,9 @@ export function transferHomeOwnership(world: World, sellerId: MemberId, buyerId:
   home.policy = 'friends'
   home.updatedAt = iso(world.now())
   sellerProfile.homeId = replacementHomeId
-  buyerProfile.homeId = homeId
+  sellerProfile.ownedHomeIds = sellerHomes.filter(id => id !== homeId)
+  sellerProfile.ownedHomeIds.push(replacementHomeId)
+  buyerProfile.ownedHomeIds = [...buyerHomes, homeId]
   sellerProfile.revision += 1
   buyerProfile.revision += 1
   tellStreet(world, home)

@@ -31,7 +31,7 @@ async function setPolicy(policy: VisitPolicy): Promise<void> {
     if (world.kind === 'home' && world.home?.id === result.home.id) world.home = result.home
   }
 }
-const rent = useLoad(() => api('rental.mine', {}), [() => app.changed.homes, () => app.changed.bank])
+const rent = useLoad(() => api('rental.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
 const weeklyRent = ref<string | number>(100)
 const tenantUsername = ref('')
 

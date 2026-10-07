@@ -8,7 +8,6 @@ import { careerPoints } from './work.ts'
 import { transferCoinsByUsername } from './travel.ts'
 import { transferHomeOwnership } from './homes.ts'
 import { cancelRentalForHome } from './rentals.ts'
-import { allMemberIds } from './members.ts'
 
 const state = (world: World) => world.slice<{ sales: Record<string, any> }>('propertySales', () => ({ sales: {} }))
 const key = (homeId: HomeId) => String(homeId)

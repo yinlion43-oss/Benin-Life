@@ -31,6 +31,27 @@ async function setPolicy(policy: VisitPolicy): Promise<void> {
     if (world.kind === 'home' && world.home?.id === result.home.id) world.home = result.home
   }
 }
+const rent = useLoad(() => api('rental.mine', {}), [() => app.changed.homes, () => app.changed.bank])
+const weeklyRent = ref<string | number>(100)
+const tenantUsername = ref('')
+
+async function listRental(): Promise<void> {
+  const result = await attempt('rental.list', { weeklyRent: Number(weeklyRent.value) }, 'Property listed for rent.')
+  if (result) await rent.reload()
+}
+async function offerRental(homeId: HomeId): Promise<void> {
+  if (!tenantUsername.value.trim()) return
+  const result = await attempt('rental.offer', { homeId, tenantUsername: tenantUsername.value.trim() }, 'Rental offered to that @username.')
+  if (result) { tenantUsername.value = ''; await rent.reload() }
+}
+async function payRent(): Promise<void> {
+  const result = await attempt('rental.pay', {}, 'Rent paid from your bank balance.')
+  if (result) await rent.reload()
+}
+async function endRental(): Promise<void> {
+  const result = await attempt('rental.end', {}, 'Rental ended.')
+  if (result) await rent.reload()
+}
 const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 </script>
 
@@ -56,6 +77,34 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
     </fieldset>
 
     <HomePlacement :studio="studio" />
+
+    <section class="card stack">
+      <div class="row">
+        <span class="grow"><strong>Player property rentals</strong><span class="muted small">Rent your home to another player using their unique @username.</span></span>
+      </div>
+      <StateView v-if="rent.state.value !== 'ready'" :state="rent.state.value" :message="rent.error.value" @retry="rent.reload" />
+      <template v-else>
+        <div class="row wrap">
+          <input v-model="weeklyRent" class="input" type="number" min="1" step="1" aria-label="Weekly rent" />
+          <button class="btn sm" type="button" @click="listRental">List for rent</button>
+        </div>
+        <form class="row wrap" @submit.prevent="offerRental(state.home.id)">
+          <input v-model="tenantUsername" class="input" maxlength="21" placeholder="@username" aria-label="Tenant username" required />
+          <button class="btn sm" type="submit">Offer to player</button>
+        </form>
+        <div v-for="lease in rent.data.value?.owned ?? []" :key="lease.homeId" class="list-row">
+          <span class="grow"><strong>{{ lease.tenantUsername || 'Unassigned listing' }}</strong><span class="muted tiny">🪙 {{ lease.weeklyRent }}/week · {{ lease.active ? 'Active' : 'Ended' }}</span></span>
+          <button v-if="lease.active" class="btn sm" type="button" @click="endRental">End rental</button>
+        </div>
+        <div v-for="lease in rent.data.value?.rented ?? []" :key="lease.homeId" class="list-row">
+          <span class="grow"><strong>Rental home</strong><span class="muted tiny">🪙 {{ lease.weeklyRent }}/week · next due {{ when(lease.nextDueAt) }}</span></span>
+          <div class="row wrap">
+            <button class="btn sm" type="button" @click="payRent">Pay rent</button>
+            <button class="btn sm" type="button" @click="endRental">Leave rental</button>
+          </div>
+        </div>
+      </template>
+    </section>
 
     <details v-if="state.estate?.receipts.length" class="disclosure">
       <summary>Recent purchases <span class="chip num">{{ state.estate.receipts.length }}</span></summary>
@@ -83,6 +132,7 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
 </template>
 
 <style scoped>
+.wrap { flex-wrap: wrap; }
 .receipts { list-style: none; margin: 0; padding: 0; }
 .receipts .list-row + .list-row { border-top: 1px solid var(--line); }
 .policy { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }

@@ -1,8 +1,8 @@
 // Travel, documents and the play-money wallet.
 //
 // The avatar is in one place. Another city costs a fare; another country needs a passport and,
-// outside visa-free blocs, a visa. Everything is paid in coins (the work module's game points).
-// This module is the only thing that moves an avatar between metros or takes coins from a member:
+// outside visa-free blocs, a visa. Everything is paid in naira (the work module's game points).
+// This module is the only thing that moves an avatar between metros or takes naira from a member:
 // it vets every area change (members.ts) and every street room (rooms.ts), re-checks each booking
 // from scratch, and settles time-based work both on tick and before any read or decision, so the
 // outcome never depends on which of the two happens first.
@@ -24,7 +24,7 @@ import { evict, heldReason, roomOf, setRoomGuard } from './rooms.ts'
 import { addPoints, careerPoints, completedShifts, setEarningHook, setSpendingHook, spendPoints } from './work.ts'
 
 interface VisaRecord extends Visa {
-  /** Coins the applicant must still hold when the decision is made: required funds minus the fee already paid. */
+  /** Naira the applicant must still hold when the decision is made: required funds minus the fee already paid. */
   needs: number
 }
 interface MemberTravel {
@@ -153,7 +153,7 @@ function announce(world: World, memberId: MemberId, member: MemberTravel): void 
   world.push(memberId, { type: 'travel.changed', state: view(world, memberId, member) })
 }
 
-/** Write a coin movement into the wallet history. Call it after the balance has changed. */
+/** Write a naira movement into the wallet history. Call it after the balance has changed. */
 function log(world: World, memberId: MemberId, member: MemberTravel, kind: LedgerKind, amount: number, text: string, transferId?: string): void {
   member.ledger.unshift({ id: `lg_${randomToken(12)}`, at: iso(world.now()), amount, kind, text, balanceAfter: careerPoints(world, memberId), ...(transferId ? { transferId } : {}) })
   if (member.ledger.length > LEDGER_KEPT) member.ledger.length = LEDGER_KEPT
@@ -178,8 +178,8 @@ function firstArrival(world: World, memberId: MemberId, member: MemberTravel, ar
   if (room && !withinReach(member, room.ref)) evict(world, memberId)
   if (!member.startingGranted) {
     member.startingGranted = true
-    addPoints(world, memberId, TRAVEL.startingCoins)
-    log(world, memberId, member, 'starting', TRAVEL.startingCoins, 'Starting coins')
+    addPoints(world, memberId, TRAVEL.startingNaira)
+    log(world, memberId, member, 'starting', TRAVEL.startingNaira, 'Starting naira')
   }
   announce(world, memberId, member)
 }
@@ -229,7 +229,7 @@ function arrive(world: World, memberId: MemberId, member: MemberTravel, trip: Tr
 function decide(world: World, memberId: MemberId, visa: VisaRecord, now: number): void {
   const balance = careerPoints(world, memberId), shifts = completedShifts(world, memberId)
   const failed: string[] = []
-  if (balance < visa.needs) failed.push(`Funds were below the required ${visa.needs} coins: you had ${balance}.`)
+  if (balance < visa.needs) failed.push(`Funds were below the required ${visa.needs} naira: you had ${balance}.`)
   if (shifts < TRAVEL.visa.minShifts) failed.push(`Work history was too short: ${shifts} of the ${TRAVEL.visa.minShifts} completed shifts needed.`)
   const name = countryName(visa.countryCode)
   if (failed.length) {
@@ -323,8 +323,8 @@ function quoteFor(world: World, memberId: MemberId, member: MemberTravel, to: Co
   const balance = careerPoints(world, memberId)
   const requirements: TravelRequirement[] = international ? borderRequirements(member, to.countryCode, now) : []
   requirements.push(balance >= terms.fare
-    ? { kind: 'funds', met: true, text: terms.fare ? `The fare is ${terms.fare} coins. You have ${balance}.` : 'There is no fare.' }
-    : { kind: 'funds', met: false, text: `You need ${terms.fare - balance} more ${terms.fare - balance === 1 ? 'coin' : 'coins'} for the ${terms.fare} coin fare. Work a shift or play a game to earn them.` })
+    ? { kind: 'funds', met: true, text: terms.fare ? `The fare is ${terms.fare} naira. You have ${balance}.` : 'There is no fare.' }
+    : { kind: 'funds', met: false, text: `You need ${terms.fare - balance} more ${terms.fare - balance === 1 ? 'naira' : 'naira'} for the ${terms.fare} naira fare. Work a shift or play a game to earn them.` })
   const unmet = requirements.find(requirement => !requirement.met)
   let blocked: Blocked | null = null, reason = ''
   if (terms.mode === 'local') { blocked = 'local'; reason = 'That is close enough to walk. Open it from the area list.' }
@@ -337,11 +337,11 @@ function quoteFor(world: World, memberId: MemberId, member: MemberTravel, to: Co
 }
 
 /**
- * For modules that pay coins (work, games): call this after adding the points, so the wallet
- * history shows where they came from. It records the earning; it does not move coins itself.
+ * For modules that pay naira (work, games): call this after adding the points, so the wallet
+ * history shows where they came from. It records the earning; it does not move naira itself.
  */
-/** Transfer play-money coins between completed Benin Life characters by their unique @username. */
-export function transferCoinsByUsername(world: World, senderId: MemberId, username: string, amount: number, text: string): { transferId: string; balance: number } {
+/** Transfer play-money naira between completed Benin Life characters by their unique @username. */
+export function transferNairaByUsername(world: World, senderId: MemberId, username: string, amount: number, text: string): { transferId: string; balance: number } {
   const normalized = normalizeBeninUsername(username)
   if (!normalized) throw new WorldError('invalid', 'Enter a valid @username.')
   if (!Number.isSafeInteger(amount) || amount < 1) throw new WorldError('invalid', 'That amount is not valid.')
@@ -350,7 +350,7 @@ export function transferCoinsByUsername(world: World, senderId: MemberId, userna
   if (!recipientId) throw new WorldError('not_found', 'No completed Benin Life character uses that @username.')
   if (recipientId === senderId) throw new WorldError('invalid', 'Choose another player.')
   const sender = memberOf(world, senderId), recipient = memberOf(world, recipientId)
-  if (careerPoints(world, recipientId) + amount > Number.MAX_SAFE_INTEGER) throw new WorldError('conflict', 'That transfer would exceed the recipient’s game coin balance limit.')
+  if (careerPoints(world, recipientId) + amount > Number.MAX_SAFE_INTEGER) throw new WorldError('conflict', 'That transfer would exceed the recipient’s game naira balance limit.')
   spendPoints(world, senderId, amount)
   addPoints(world, recipientId, amount)
   const transferId = `bt_${randomToken(12)}`
@@ -377,7 +377,7 @@ export function whereIs(world: World, memberId: MemberId): { location: CoarseAre
 /** The country a member's character is from (the country of first arrival), for standings by place. Read-only. */
 export const homeCountryOf = (world: World, memberId: MemberId): string | null => state(world).members[memberId]?.homeCountry ?? null
 
-/** Other modules that charge coins (a meal, groceries) report the purchase here so it shows in the wallet history. */
+/** Other modules that charge naira (a meal, groceries) report the purchase here so it shows in the wallet history. */
 export function recordSpending(world: World, memberId: MemberId, amount: number, kind: 'food' | 'business', text: string): void {
   if (!(amount > 0) || !exists(world, memberId)) return
   const member = memberOf(world, memberId)
@@ -403,7 +403,7 @@ export function streetAdmission(world: World, memberId: MemberId, ref: RoomRef):
 
 /**
  * Take a vehicle's charter fare. The amount is the service's own quote, never a request's. The
- * whole fare or nothing: too few coins throws and changes nothing. One line in the wallet history.
+ * whole fare or nothing: too few naira throws and changes nothing. One line in the wallet history.
  */
 export function chargeVehicleFare(world: World, memberId: MemberId, fare: number, text: string): { ledgerId: string; balance: number } {
   if (!Number.isSafeInteger(fare) || fare < 1) throw new WorldError('invalid', 'That fare is not valid.')
@@ -425,15 +425,15 @@ export function refundVehicleFare(world: World, memberId: MemberId, amount: numb
 }
 
 /**
- * Take the coins for something bought or built for a home. The amount is the service's own
- * quote, never a request's. The whole amount or nothing: too few coins throws and changes
+ * Take the naira for something bought or built for a home. The amount is the service's own
+ * quote, never a request's. The whole amount or nothing: too few naira throws and changes
  * nothing. One line in the wallet history.
  */
-export function chargeHomePurchase(world: World, memberId: MemberId, coins: number, text: string): { ledgerId: string; balance: number } {
-  if (!Number.isSafeInteger(coins) || coins < 1) throw new WorldError('invalid', 'That amount is not valid.')
+export function chargeHomePurchase(world: World, memberId: MemberId, naira: number, text: string): { ledgerId: string; balance: number } {
+  if (!Number.isSafeInteger(naira) || naira < 1) throw new WorldError('invalid', 'That amount is not valid.')
   const member = current(world, memberId, world.now())
-  spendPoints(world, memberId, coins)
-  log(world, memberId, member, 'home', -coins, text.slice(0, 120))
+  spendPoints(world, memberId, naira)
+  log(world, memberId, member, 'home', -naira, text.slice(0, 120))
   announce(world, memberId, member)
   return { ledgerId: member.ledger[0]!.id, balance: careerPoints(world, memberId) }
 }
@@ -517,7 +517,7 @@ export function registerTravel(world: World): void {
     if (recipientId === ctx.memberId) throw new WorldError('invalid', 'Choose another player’s @username.')
     world.limit(`beninbank-transfer:${ctx.memberId}`, 6, 60_000)
     const recipientUsername = record(world, recipientId).profile.username!
-    if (careerPoints(world, recipientId) + input.amount > Number.MAX_SAFE_INTEGER) throw new WorldError('conflict', 'That transfer would exceed the recipient’s game coin balance limit.')
+    if (careerPoints(world, recipientId) + input.amount > Number.MAX_SAFE_INTEGER) throw new WorldError('conflict', 'That transfer would exceed the recipient’s game naira balance limit.')
     const senderUsername = record(world, ctx.memberId).profile.username!
     // Requests run serially through the world service. Validate the debit first so either both ledger
     // entries and both balance changes happen, or none do.

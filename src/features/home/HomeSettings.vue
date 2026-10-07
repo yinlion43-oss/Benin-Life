@@ -32,6 +32,25 @@ async function setPolicy(policy: VisitPolicy): Promise<void> {
   }
 }
 const property = useLoad(() => api('property.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
+const upgradeOptions = [
+  { id: 'furnishing', label: 'Premium furnishings', price: 500, bonus: 50 },
+  { id: 'security', label: 'Gated security + CCTV', price: 700, bonus: 75 },
+  { id: 'power', label: 'Solar + generator backup', price: 900, bonus: 100 },
+  { id: 'smart', label: 'Smart-home package', price: 650, bonus: 75 },
+  { id: 'parking', label: 'Secure premium parking', price: 400, bonus: 40 },
+  { id: 'pool', label: 'Swimming pool', price: 1200, bonus: 125 },
+] as const
+const homeUpgrades = ref<Record<string, boolean>>({})
+async function loadUpgrades(): Promise<void> {
+  const result = await api('property.upgrades', { homeId: state.home.id })
+  if (result) homeUpgrades.value = result.upgrades
+}
+async function installUpgrade(id: string): Promise<void> {
+  const result = await attempt('property.upgrade', { homeId: state.home.id, upgrade: id }, 'Property upgrade installed.')
+  if (result) { homeUpgrades.value = Object.fromEntries(result.installed.map(item => [item, true])); await refreshPoints() }
+}
+void loadUpgrades()
+
 const portfolio = useLoad(() => api('property.portfolio', {}), [() => app.changed.homes, () => app.changed.notifications])
 const rent = useLoad(() => api('rental.mine', {}), [() => app.changed.homes, () => app.changed.notifications])
 const weeklyRent = ref<string | number>(100)
@@ -95,6 +114,18 @@ const when = (iso: string): string => new Date(iso).toLocaleString([], { day: 'n
     </fieldset>
 
     <HomePlacement :studio="studio" />
+
+    <section class="card stack">
+      <div class="row">
+        <span class="grow"><strong>Property upgrades</strong><span class="muted small">Improve the home with security, power and luxury amenities. Installed upgrades increase its in-game rental value.</span></span>
+      </div>
+      <div class="days">
+        <div v-for="item in upgradeOptions" :key="item.id" class="list-row">
+          <span class="grow"><strong>{{ item.label }}</strong><span class="muted tiny">🪙 {{ item.price }} · +🪙{{ item.bonus }}/week rental value</span></span>
+          <button class="btn sm" type="button" :disabled="!!homeUpgrades[item.id] || busy" @click="installUpgrade(item.id)">{{ homeUpgrades[item.id] ? 'Installed' : 'Install' }}</button>
+        </div>
+      </div>
+    </section>
 
     <section class="card stack">
       <div class="row">

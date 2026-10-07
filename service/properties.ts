@@ -5,7 +5,7 @@ import { empty, num, obj, str } from './parse.ts'
 import type { World } from './kernel.ts'
 import { beninLifeReady, memberByBeninUsername, record } from './members.ts'
 import { careerPoints } from './work.ts'
-import { transferCoinsByUsername } from './travel.ts'
+import { transferNairaByUsername } from './travel.ts'
 import { transferHomeOwnership } from './homes.ts'
 import { cancelRentalForHome } from './rentals.ts'
 
@@ -43,7 +43,7 @@ export function registerProperties(world: World): void {
     const username = record(world, ctx.memberId).profile.username
     if (!username || username.toLowerCase() !== offer.buyerUsername.toLowerCase()) throw new WorldError('forbidden', 'This property was offered to another @username.')
     if (careerPoints(world, ctx.memberId) < offer.price) throw new WorldError('conflict', 'Insufficient bank balance for this property.')
-    transferCoinsByUsername(world, ctx.memberId, record(world, offer.sellerId).profile.username!, offer.price, `Property purchase · ${offer.homeId}`)
+    transferNairaByUsername(world, ctx.memberId, record(world, offer.sellerId).profile.username!, offer.price, `Property purchase · ${offer.homeId}`)
     transferHomeOwnership(world, offer.sellerId, ctx.memberId, offer.homeId)
     delete state(world).sales[key(input.homeId)]
     world.touch()

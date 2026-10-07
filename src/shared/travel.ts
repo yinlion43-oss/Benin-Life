@@ -1,4 +1,4 @@
-// Travel, documents and the play-money wallet.
+// Travel, documents and the Benin-Life naira wallet.
 //
 // The avatar is somewhere in the world. Moving it to another city costs a fare; crossing a
 // border needs a passport and, outside visa-free blocs, a visa. Fares and fees are paid in
@@ -32,7 +32,7 @@ export interface Visa {
   appliedAt: Iso
   readyAt: Iso | null
   validUntil: Iso | null
-  /** Plain reason when refused, for example "Funds were below the required 400 coins". */
+  /** Plain reason when refused, for example "Funds were below the required ₦400". */
   note: string
 }
 
@@ -73,14 +73,14 @@ export interface TravelState {
 // ── Rules shared by the service (which enforces them) and the App (which explains them) ──
 
 export const TRAVEL = {
-  startingCoins: 150,
+  startingNaira: 150,
   /** Districts within this distance of the avatar's location can be walked into without a trip. */
   localRangeKm: 45,
   passport: { fee: 400, seconds: 90, validDays: 60 },
   visa: { seconds: 75, validDays: 30, minShifts: 2 },
 } as const
 
-/** Groups of countries whose members travel between each other without a visa in this game. */
+/** Groups of countries whose members travel between each other without a visa in this game. All game fees are in naira. */
 export const VISA_FREE_BLOCS: { id: string; name: string; countries: string[] }[] = [
   { id: 'ecowas', name: 'ECOWAS', countries: ['NG', 'GH', 'SN', 'CI', 'TG', 'BJ', 'GM', 'LR', 'SL', 'GN', 'GW', 'CV'] },
   { id: 'eac', name: 'East African Community', countries: ['KE', 'UG', 'TZ', 'RW', 'BI', 'SS'] },

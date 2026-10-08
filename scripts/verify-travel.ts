@@ -599,7 +599,7 @@ check('12 booking twice in transit is a conflict and charges one fare; time sett
 })
 
 check('13 wallet safety: no negative balance anywhere, spends are refused whole, earnings are logged not minted', () => {
-  rejects('conflict', () => spendPoints(world, K, 66), /^You need 1 more coin\./)
+  rejects('conflict', () => spendPoints(world, K, 66), /^You need ₦1 more\./)
   rejects('invalid', () => spendPoints(world, K, -5))
   rejects('invalid', () => spendPoints(world, K, Number.NaN))
   assert.equal(careerPoints(world, K), 65)

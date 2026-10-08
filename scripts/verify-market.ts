@@ -2,6 +2,8 @@
 // Run: node scripts/verify-market.ts   (prints one PASS line per check, exits non-zero on the first failure)
 import assert from 'node:assert/strict'
 import type { MemberId, ProductId, VariantId } from '../src/shared/ids.ts'
+import { BIG_DREAMS, PLAYER_TRAITS } from '../src/shared/beninLife.ts'
+import { record } from '../service/members.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { ErrorCode } from '../src/shared/model.ts'
 import type { Persistence } from '../service/kernel.ts'
@@ -20,6 +22,17 @@ ensureMember(world, A, 'Test member A')
 ensureMember(world, B, 'Test member B')
 ensureMember(world, C, 'Test member C')
 ensureMember(world, R, 'Catalog reviewer', { reviewer: true })
+
+function readyMember(memberId: MemberId, username: string): void {
+  const entry = record(world, memberId)
+  world.call(memberId, 'member.saveProfile', { displayName: username, bio: '', clearFace: false, look: entry.profile.look, expectedRevision: entry.profile.revision })
+  world.call(memberId, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+  world.call(memberId, 'member.completeOnboarding', {})
+}
+
+readyMember(A, 'test_market_a')
+readyMember(B, 'test_market_b')
+readyMember(C, 'test_market_c')
 
 function rejects(code: ErrorCode, run: () => unknown): void {
   try { run() } catch (error) {

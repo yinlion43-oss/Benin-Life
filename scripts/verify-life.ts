@@ -594,7 +594,7 @@ check('13 a proper meal with someone else in the room lifts the bonus for two ho
   assert.deepEqual(joined.state.meals[0]!.with, ['@member_b'])
   assert.equal(joined.state.together, tables + 1)
   const news = pushed(B).slice(told).find(event => event.reason === 'table')!
-  assert.equal(news.note, 'Member A sat down with Jollof rice and chicken. You are eating together.')
+  assert.equal(news.note, '@member_a sat down with Jollof rice and chicken. You are eating together.')
   assert.deepEqual(life(B).meals.find(meal => meal.name === 'Amala, ewedu and gbegiri')!.with, ['@member_a'], 'on the plate B sat down to, not the drink ordered after it')
   assert.equal(life(B).together, 1)
   assert.equal(life(B).effects.companyUntil, new Date(now + LIFE.company.hours * HOUR).toISOString(), 'B’s good company starts again')

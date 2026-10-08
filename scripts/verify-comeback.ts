@@ -167,7 +167,7 @@ leave(tayo)
 message(ada, tayo)
 expectType('message', '@ada sent you a message', 'a direct message (social)')
 world.call(chidi, 'wave.send', { to: tayo })
-expectType('person', 'Chidi waved at you', 'a wave (social)')
+expectType('person', '@chidi waved at you', 'a wave (social)')
 world.call(chidi, 'meetup.propose', {
   venue: { placeId: 'p555' as never, districtId: ibadan.arrivalDistrict, name: 'Bodija Market', category: 'shop', branch: 'main gate' },
   startsAt: new Date(lagos(3, 18)).toISOString(), timezone: 'Africa/Lagos', note: '', invite: [tayo],

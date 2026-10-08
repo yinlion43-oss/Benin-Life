@@ -352,7 +352,7 @@ check('6 ECOWAS: Ghana and Togo need a passport but no visa; passport is paid, p
     assert.match(offer.reason, /You need a passport/)
   }
   rejects('forbidden', () => book(B, accra), /You need a passport/)
-  rejects('conflict', () => world.call(B, 'travel.passportApply', {}), /^You need 250 more naira/)
+  rejects('conflict', () => world.call(B, 'travel.passportApply', {}), /^You need ₦250 more/)
   assert.equal(balance(B), 150)
   assert.equal(travel(B).passport.status, 'none')
 

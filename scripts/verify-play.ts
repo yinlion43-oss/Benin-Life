@@ -2,6 +2,7 @@
 // controllable clock, plain asserts. Run: node scripts/verify-play.ts
 // Prints one PASS line per check and exits non-zero on the first failure.
 import assert from 'node:assert/strict'
+import { iso } from '../src/shared/ids.ts'
 import type { CommunityId, MatchId, MemberId } from '../src/shared/ids.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { ErrorCode } from '../src/shared/model.ts'
@@ -27,7 +28,7 @@ function makeWorld(): { world: World; events: Record<string, ServerEvent[]> } {
     profile.username = `@${name.toLowerCase()}`
     profile.displayName = profile.username
     profile.beninLife = { traits: ['hustler', 'foodie'], dream: "Everybody's Padi", lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
-    profile.onboardedAt = new Date(now).toISOString()
+    profile.onboardedAt = iso(now)
     events[member] = []
     world.connect(member, frame => { if (frame.t === 'event') events[member]!.push(frame.event) }, () => {})
   }

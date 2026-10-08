@@ -52,7 +52,7 @@ const member = (key: string, name: string, reviewer = false): MemberId => {
   ensureMember(world, id, name, { reviewer })
   const profile = record(world, id).profile
   profile.username = `@${name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)}`
-  profile.displayName = profile.username
+  profile.displayName = name
   profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
   return id
 }
@@ -174,7 +174,7 @@ world.call(chidi, 'meetup.propose', {
 })
 expectType('invite', '@chidi is waiting for your answer: Bodija Market, Sat 3 Oct, 18:00', 'a meetup invitation (people)')
 world.call(uche, 'intro.respond', { introId: world.call(tayo, 'intro.send', { to: uche, note: '' }).intro.id, accept: true })
-expectType('news', '@uche____sons_ accepted your introduction', 'an accepted introduction (people)')
+expectType('news', 'Uche & <Sons> accepted your introduction', 'an accepted introduction (people)')
 assert.ok(world.call(tayo, 'comeback.preview', { origin: 'javascript:alert(1)' }).preview.rendered.email.text.includes(`${ORIGIN}/`), 'an address that is not a web origin is ignored')
 // Away, the character gets hungry on its own clock.
 until(lagos(1, 8, 45))

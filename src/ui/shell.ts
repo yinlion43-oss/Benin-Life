@@ -19,22 +19,21 @@ export interface NavItem {
 }
 
 export const NAV: readonly NavItem[] = [
-  { to: '/', label: 'World', glyph: 'globe', key: '1', primary: true },
-  { to: '/people', label: 'People', glyph: 'people', key: '3', primary: true },
-  { to: '/messages', label: 'Chat', glyph: 'chat', key: 'm', primary: true },
-  { to: '/work', label: 'Work', glyph: 'work', key: '5', primary: true },
-  { to: '/arena', label: 'Games', glyph: 'dice', key: '6', primary: true },
+  { to: '/map', label: 'City', glyph: 'map', key: '1', primary: true },
+  { to: '/settings', label: 'Me', glyph: 'people', key: '3', primary: true },
+  { to: '/life', label: 'Life', glyph: 'work', key: '5', primary: true },
+  { to: '/wallet', label: 'Wallet', glyph: 'bag', key: '7', primary: true },
+  { to: '/jobs', label: 'Jobs', glyph: 'clipboard', key: '8' },
   { to: '/travel', label: 'Travel', glyph: 'plane', key: '2' },
   { to: '/home', label: 'Home', glyph: 'home', key: '9' },
-  { to: '/inbox', label: 'Inbox', glyph: 'bell', key: '0' },
-  { to: '/communities', label: 'Groups', glyph: 'groups', key: '4' },
-  { to: '/market', label: 'Market', glyph: 'bag', key: '7' },
-  { to: '/jobs', label: 'Jobs', glyph: 'clipboard', key: '8' },
+  { to: '/people', label: 'People', glyph: 'people', key: '4' },
+  { to: '/messages', label: 'Chat', glyph: 'chat', key: 'm' },
+  { to: '/arena', label: 'Games', glyph: 'dice', key: '6' },
   { to: '/map', label: 'Map', glyph: 'map', key: '', menuOnly: true },
   { to: '/phone', label: 'Phone', glyph: 'phone', key: '' },
   { to: '/settings', label: 'Settings', glyph: 'sliders', key: ',', menuOnly: true },
   { to: '/feedback', label: 'Feedback', glyph: 'note', key: '', menuOnly: true },
-]
+
 
 /**
  * The section a path belongs to. A route may name it (`meta.nav`) when its own path does not say:

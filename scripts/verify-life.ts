@@ -791,6 +791,10 @@ check('20 idle and hidden tabs rest even with a socket open; passive reads do no
   const made = createWorld({ now: () => clock })
   const member = id('idle')
   ensureMember(made, member, 'Idle member')
+  const idleProfile = record(made, member)
+  if (!idleProfile.profile.username) made.call(member, 'member.saveProfile', { displayName: 'life_idle', bio: '', clearFace: false, look: idleProfile.profile.look, expectedRevision: idleProfile.profile.revision })
+  if (!record(made, member).profile.beninLife) made.call(member, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+  if (!record(made, member).profile.onboardedAt) made.call(member, 'member.completeOnboarding', {})
   made.connect(member, () => {}, () => {})
   const read = () => made.call(member, 'life.state', {}).state
   const silent = (duration: number) => { clock += duration; made.tick() }

@@ -4,6 +4,7 @@
 #            "production" environment's deployment restrictions allow it. The provider token
 #            exists only in that environment. Human approval requires configured reviewers.
 # Nothing here uses pull_request_target, workflow_run or a pull request's code.
+# Benin-Life: immutable action pins; exact Node 22.18.0.
 name: Release
 
 on:

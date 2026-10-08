@@ -26,7 +26,7 @@ function makeWorld(): { world: World; events: Record<string, ServerEvent[]> } {
     const profile = record(world, member).profile
     profile.username = `@${name.toLowerCase()}`
     profile.displayName = profile.username
-    profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
+    profile.beninLife = { traits: ['hustler', 'foodie'], dream: "Everybody's Padi", lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
     profile.onboardedAt = new Date(now).toISOString()
     events[member] = []
     world.connect(member, frame => { if (frame.t === 'event') events[member]!.push(frame.event) }, () => {})

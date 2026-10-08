@@ -437,6 +437,9 @@ function walkApproach(viewer: MemberId, homeId: HomeId): Extract<HomeApproach, {
 }
 const hauwa = id('hauwa')
 ensureMember(world, hauwa, 'Hauwa')
+const hauwaProfile = record(world, hauwa)
+if (!hauwaProfile.profile.username) world.call(hauwa, 'member.saveProfile', { displayName: 'hauwa', bio: '', clearFace: false, look: hauwaProfile.profile.look, expectedRevision: hauwaProfile.profile.revision })
+if (!record(world, hauwa).profile.beninLife) world.call(hauwa, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
 connect(hauwa)
 world.call(hauwa, 'member.setCurrentArea', { area: lagos, source: 'manual' })
 world.call(hauwa, 'member.completeOnboarding', {})

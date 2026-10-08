@@ -2,6 +2,7 @@
 // controllable clock, plain asserts. Run: node scripts/verify-play.ts
 // Prints one PASS line per check and exits non-zero on the first failure.
 import assert from 'node:assert/strict'
+import { iso } from '../src/shared/ids.ts'
 import type { CommunityId, MatchId, MemberId } from '../src/shared/ids.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { ErrorCode } from '../src/shared/model.ts'
@@ -10,7 +11,8 @@ import type { Card, DashInput, Suit, TableView } from '../src/shared/play.ts'
 import type { ServerEvent } from '../src/shared/protocol.ts'
 import type { World } from '../service/kernel.ts'
 import { createWorld } from '../service/index.ts'
-import { addFriendship, ensureMember } from '../service/members.ts'
+import { addFriendship, ensureMember, record } from '../service/members.ts'
+import { STARTING_SKILLS } from '../src/shared/beninLife.ts'
 
 const SECOND = 1000, MINUTE = 60_000, HOUR = 3_600_000, DAY = 86_400_000
 let now = Date.UTC(2026, 9, 1, 12)
@@ -22,6 +24,11 @@ function makeWorld(): { world: World; events: Record<string, ServerEvent[]> } {
   const events: Record<string, ServerEvent[]> = {}
   for (const [member, name] of [[A, 'Ada'], [B, 'Ben'], [C, 'Cleo'], [D, 'Dev']] as const) {
     ensureMember(world, member, name)
+    const profile = record(world, member).profile
+    profile.username = `@${name.toLowerCase()}`
+    profile.displayName = profile.username
+    profile.beninLife = { traits: ['hustler', 'foodie'], dream: "Everybody's Padi", lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
+    profile.onboardedAt = iso(now)
     events[member] = []
     world.connect(member, frame => { if (frame.t === 'event') events[member]!.push(frame.event) }, () => {})
   }

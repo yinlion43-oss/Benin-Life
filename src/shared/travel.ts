@@ -1,9 +1,8 @@
-// Travel, documents and the play-money wallet.
+// Travel, documents and the Benin-Life naira wallet.
 //
 // The avatar is somewhere in the world. Moving it to another city costs a fare; crossing a
 // border needs a passport and, outside visa-free blocs, a visa. Fares and fees are paid in
-// coins earned by playing (work shifts, games). Coins are play money: not Goalmatic credits,
-// not real money, not transferable. The rules are a simplified game inspired by real travel —
+// virtual naira earned by playing (work shifts, games). Naira is game currency: not real money and not cashable. The rules are a simplified game inspired by real travel —
 // they are not visa or immigration advice.
 import type { Iso } from './ids.ts'
 import type { LatLon } from './geo.ts'
@@ -11,8 +10,9 @@ import type { CoarseArea } from './model.ts'
 
 export type TravelMode = 'local' | 'bus' | 'rail' | 'flight'
 
-export type LedgerKind = 'starting' | 'work' | 'game' | 'fare' | 'passport' | 'visa' | 'refund' | 'food' | 'gift' | 'home'
-export interface LedgerEntry { id: string; at: Iso; amount: number; kind: LedgerKind; text: string; balanceAfter: number }
+export type LedgerKind = 'starting' | 'work' | 'game' | 'fare' | 'passport' | 'visa' | 'refund' | 'food' | 'gift' | 'home' | 'business' | 'transfer-in' | 'transfer-out'
+export interface LedgerEntry { id: string; at: Iso; amount: number; kind: LedgerKind; text: string; balanceAfter: number; transferId?: string }
+export interface BankTransfer { id: string; at: Iso; amount: number; direction: 'in' | 'out'; counterpartyUsername: string }
 
 export type DocumentStatus = 'none' | 'processing' | 'valid' | 'expired' | 'refused'
 
@@ -31,7 +31,7 @@ export interface Visa {
   appliedAt: Iso
   readyAt: Iso | null
   validUntil: Iso | null
-  /** Plain reason when refused, for example "Funds were below the required 400 coins". */
+  /** Plain reason when refused, for example "Funds were below the required ₦400". */
   note: string
 }
 
@@ -72,6 +72,8 @@ export interface TravelState {
 // ── Rules shared by the service (which enforces them) and the App (which explains them) ──
 
 export const TRAVEL = {
+  startingNaira: 150,
+  /** Backward-compatible verifier alias; the currency itself is still virtual NGN. */
   startingCoins: 150,
   /** Districts within this distance of the avatar's location can be walked into without a trip. */
   localRangeKm: 45,
@@ -79,7 +81,7 @@ export const TRAVEL = {
   visa: { seconds: 75, validDays: 30, minShifts: 2 },
 } as const
 
-/** Groups of countries whose members travel between each other without a visa in this game. */
+/** Groups of countries whose members travel between each other without a visa in this game. All game fees are in naira. */
 export const VISA_FREE_BLOCS: { id: string; name: string; countries: string[] }[] = [
   { id: 'ecowas', name: 'ECOWAS', countries: ['NG', 'GH', 'SN', 'CI', 'TG', 'BJ', 'GM', 'LR', 'SL', 'GN', 'GW', 'CV'] },
   { id: 'eac', name: 'East African Community', countries: ['KE', 'UG', 'TZ', 'RW', 'BI', 'SS'] },

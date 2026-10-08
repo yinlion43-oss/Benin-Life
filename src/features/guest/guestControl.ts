@@ -162,7 +162,7 @@ export function createGuestControl(hooks: GuestHooks, go: (path: string) => void
     const status = hooks.status()
     // The guest the service names must be the member this tab is playing as.
     if (!status || app.phase !== 'ready' || !app.me || app.me.id !== status.memberId) return null
-    const character: GuestCharacter | null = app.me.onboardedAt ? { memberId: app.me.id, displayName: app.me.displayName, look: app.me.look } : null
+    const character: GuestCharacter | null = app.me.onboardedAt && app.me.username && app.me.beninLife ? { memberId: app.me.id, displayName: app.me.displayName, look: app.me.look } : null
     return { status, character, persisted: hooks.persisted(), signIn: hooks.claimAvailable() && canSignIn() ? 'available' : 'unavailable' }
   })
   const welcome = computed(() => app.phase !== 'ready' && (hooks.welcome() || start.pending || start.signingIn))

@@ -39,9 +39,9 @@ const pass = ref('')
 const needsPass = computed(() => props.admission === 'pass' && !props.returning)
 const waiting = computed(() => Boolean(props.pending || props.signingIn))
 // Whether this host can save a guest to an account, and whether this browser can keep the session, are not known until the session opens, so nothing is promised here:
-// the chip and the guest details say what holds once the visitor is in. `signIn` is only whether Allworld sign-in exists in this page, which the button below answers.
+// the chip and the guest details say what holds once the visitor is in. `signIn` is only whether account sign-in exists in this page, which the button below answers.
 const PLAY_LINE = 'No account needed. Start playing now.'
-// Allworld is a game drawn on real maps. Playing a place is not being there, and a guest shares nothing about where they are.
+// Benin Life is a game drawn on real maps. Playing a place is not being there, and a guest shares nothing about where they are.
 const WORLD_LINE = 'A game world on real maps. Explore streets, travel, work and play from wherever you are. Your exact real-world location is never saved or shown to other players.'
 // `signIn` decides whether this page may point at signing in; a refused session says so only where that is true.
 const endedLine = (kind: GuestEnded): string => kind === 'expired'

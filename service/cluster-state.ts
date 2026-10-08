@@ -127,7 +127,7 @@ const ticker = setInterval(() => { if (!world.superseded) world.tick() }, 1000)
 // Operations after which a member's card may differ. The second member involved, when there is
 // one, is named in the input. Anything missed here is caught by the sweep below within seconds.
 const CARD_OPS = new Set([
-  'member.saveProfile', 'member.savePreferences', 'member.setCurrentArea', 'member.clearCurrentArea', 'member.setBrowsing', 'member.completeOnboarding',
+  'member.saveProfile', 'beninLife.initialize', 'member.savePreferences', 'member.setCurrentArea', 'member.clearCurrentArea', 'member.setBrowsing', 'member.completeOnboarding',
   'member.setFace', 'member.setFaceAudience', 'member.clearFace', 'member.block', 'member.unblock', 'intro.send', 'intro.respond', 'intro.withdraw', 'friends.remove',
 ])
 function afterOperation(memberId: MemberId, frame: Extract<ClientFrame, { t: 'req' }>): void {

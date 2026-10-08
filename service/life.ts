@@ -207,7 +207,8 @@ function commitFor(world: World, memberId: MemberId, member: MemberLife, now: nu
 
 function regionOf(world: World, memberId: MemberId): FoodRegionId {
   const { profile } = record(world, memberId)
-  return foodRegionOf(profile.browsing?.countryCode ?? profile.currentArea?.countryCode)
+  const area = profile.browsing ?? profile.currentArea
+  return foodRegionOf(area?.countryCode, area?.region)
 }
 
 const need = (key: NeedKey, value: number): NeedView => {

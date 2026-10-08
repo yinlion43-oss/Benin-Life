@@ -16,11 +16,12 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createWorld } from '../service/index.ts'
 import type { World } from '../service/kernel.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
 import { WorldError } from '../src/shared/model.ts'
 import { filePersistence } from '../service/persist.ts'
 import type { FileStore } from '../service/persist.ts'
 import type { MemberId } from '../src/shared/ids.ts'
+import { BIG_DREAMS, PLAYER_TRAITS } from '../src/shared/beninLife.ts'
 import { DASH, buildDashCourse, replayDash } from '../src/shared/play.ts'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -39,7 +40,13 @@ const quiet = <T>(run: () => T): T => { const keep = console.error; console.erro
 function open(path: string, options: { backupEveryMs?: number } = {}): { world: World; store: FileStore } {
   const store = filePersistence(path, { port: 0, ...options })
   const world = createWorld({ persistence: store, now: () => now })
-  for (const [member, name] of [[A, 'Ada'], [B, 'Bayo']] as const) world.scoped(() => ensureMember(world, member, name))
+  for (const [member, name] of [[A, 'Ada'], [B, 'Bayo']] as const) {
+    world.scoped(() => ensureMember(world, member, name))
+    const profile = record(world, member)
+    if (!profile.profile.username) world.call(member, 'member.saveProfile', { displayName: `persist_${member.slice(-1)}`, bio: '', clearFace: false, look: profile.profile.look, expectedRevision: profile.profile.revision })
+    if (!record(world, member).profile.beninLife) world.call(member, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+    if (!record(world, member).profile.onboardedAt) world.call(member, 'member.completeOnboarding', {})
+  }
   return { world, store }
 }
 

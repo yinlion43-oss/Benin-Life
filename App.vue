@@ -120,7 +120,7 @@ const moreOpen = ref(false)
 
 const SHORTCUTS = NAV.filter(item => item.key)
 
-const onboarded = computed(() => Boolean(app.me?.onboardedAt))
+const onboarded = computed(() => Boolean(app.me?.onboardedAt && app.me.username && app.me.beninLife))
 /** Unread inbox items and messages: the Menu button shows a dot for them, since its sheet is where they are. */
 const waiting = computed(() => app.unread + social.unreadDirect)
 const badges = computed(() => ({ '/inbox': app.unread, '/messages': social.unreadDirect }))
@@ -462,7 +462,7 @@ onBeforeUnmount(() => { stopBuildChecks?.(); releaseCounts?.(); window.removeEve
 
     <div v-if="aboutOpen" class="scrim" role="dialog" aria-modal="true" aria-labelledby="about-title" @click.self="aboutOpen = false">
       <div class="dialog stack">
-        <div class="row"><BrandMark :size="44" /><div class="grow"><h2 id="about-title">{{ brand.name }}</h2><span class="chip amber">Working title</span></div><button class="btn ghost icon sm" type="button" aria-label="Close" @click="aboutOpen = false"><HudIcon name="close" :size="18" /></button></div>
+        <div class="row"><BrandMark :size="44" /><div class="grow"><h2 id="about-title">{{ brand.name }}</h2><span class="muted small">{{ brand.tagline }}</span></div><button class="btn ghost icon sm" type="button" aria-label="Close" @click="aboutOpen = false"><HudIcon name="close" :size="18" /></button></div>
         <dl class="about">
           <dt>Version</dt><dd><BuildInfo /></dd>
           <dt>Running</dt><dd>{{ app.mode === 'local' ? 'Local build with the local world service' : 'Hosted world' }}</dd>

@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import type { DistrictId, HomeId, MemberId } from '../src/shared/ids.ts'
+import { BIG_DREAMS, PLAYER_TRAITS } from '../src/shared/beninLife.ts'
 import { distance, parseDistrictId } from '../src/shared/geo.ts'
 import type { Vec2 } from '../src/shared/geo.ts'
 import { HOME_PHYSICAL } from '../src/shared/homes.ts'
@@ -22,7 +23,7 @@ import type { NavigationFootprint } from '../src/world/nav.ts'
 import type { Connection, Persistence, World } from '../service/kernel.ts'
 import { createWorld } from '../service/index.ts'
 import { lifeEffects, needsSummary } from '../service/life.ts'
-import { addFriendship, ensureMember } from '../service/members.ts'
+import { addFriendship, ensureMember, record } from '../service/members.ts'
 import { placeOf } from '../service/rooms.ts'
 import { careerPoints, spendPoints } from '../service/work.ts'
 
@@ -49,6 +50,10 @@ function makeWorld(connected = true): World {
   const made = createWorld({ now: () => now, persistence })
   for (const name of names) {
     ensureMember(made, id(name), `Member ${name.toUpperCase()}`)
+    const profile = record(made, id(name))
+    if (!profile.profile.username) made.call(id(name), 'member.saveProfile', { displayName: `life_${name}`, bio: '', clearFace: false, look: profile.profile.look, expectedRevision: profile.profile.revision })
+    if (!record(made, id(name)).profile.beninLife) made.call(id(name), 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+    if (!record(made, id(name)).profile.onboardedAt) made.call(id(name), 'member.completeOnboarding', {})
     if (connected) connect(made, id(name))
   }
   return made
@@ -574,9 +579,9 @@ check('13 a proper meal with someone else in the room lifts the bonus for two ho
   assert.deepEqual([shared.state.effects.shiftBonusPercent, shared.state.effects.shiftBonusCap], [LIFE.company.percent, LIFE.company.cap])
   assert.equal(eat(B, 'ng.zobo', kitchen).receipt!.shared, false, 'a drink is not a shared meal')
   // A was in the room and not eating: A hears about it once, and can join.
-  assert.deepEqual(invites(A).slice(earlier).map(invite => [invite.from.name, invite.dish.name]), [['Member B', 'Amala, ewedu and gbegiri']])
+  assert.deepEqual(invites(A).slice(earlier).map(invite => [invite.from.name, invite.dish.name]), [['@member_b', 'Amala, ewedu and gbegiri']])
   assert.deepEqual(shared.receipt!.with, [], 'nobody was eating yet')
-  assert.equal(menu(A, kitchen).menu!.eating.join(), 'Member B', 'the menu says who is eating here')
+  assert.equal(menu(A, kitchen).menu!.eating.join(), '@member_b', 'the menu says who is eating here')
   const before = balance(B)
   const pay = workShift(B)
   assert.equal(balance(B), before + pay + Math.min(LIFE.company.cap, Math.round(pay * LIFE.company.percent / 100)), 'the lifted bonus is what gets paid')
@@ -584,13 +589,13 @@ check('13 a proper meal with someone else in the room lifts the bonus for two ho
   const coins = [balance(A), balance(B)]
   const told = pushed(B).length, tables = life(A).together
   const joined = eat(A, 'ng.jollof', kitchen)
-  assert.deepEqual(joined.receipt!.with, ['Member B'])
+  assert.deepEqual(joined.receipt!.with, ['@member_b'])
   assert.equal(joined.receipt!.shared, true)
-  assert.deepEqual(joined.state.meals[0]!.with, ['Member B'])
+  assert.deepEqual(joined.state.meals[0]!.with, ['@member_b'])
   assert.equal(joined.state.together, tables + 1)
   const news = pushed(B).slice(told).find(event => event.reason === 'table')!
-  assert.equal(news.note, 'Member A sat down with Jollof rice and chicken. You are eating together.')
-  assert.deepEqual(life(B).meals.find(meal => meal.name === 'Amala, ewedu and gbegiri')!.with, ['Member A'], 'on the plate B sat down to, not the drink ordered after it')
+  assert.equal(news.note, '@member_a sat down with Jollof rice and chicken. You are eating together.')
+  assert.deepEqual(life(B).meals.find(meal => meal.name === 'Amala, ewedu and gbegiri')!.with, ['@member_a'], 'on the plate B sat down to, not the drink ordered after it')
   assert.equal(life(B).together, 1)
   assert.equal(life(B).effects.companyUntil, new Date(now + LIFE.company.hours * HOUR).toISOString(), 'B’s good company starts again')
   assert.deepEqual([balance(A), balance(B)], [coins[0]! - TIERS.meal.price, coins[1]!], 'each pays for their own plate and nothing passes between them')
@@ -752,7 +757,7 @@ check('18 the come-back track can read a summary without changing anything', () 
   assert.equal(summary.memberId, A)
   assert.equal(summary.hunger, hunger)
   assert.equal(summary.lastMeal!.name, 'Jollof rice and chicken')
-  assert.deepEqual(summary.lastMeal!.with, ['Member B'])
+  assert.deepEqual(summary.lastMeal!.with, ['@member_b'])
   const starving = needsSummary(world, G)!
   assert.deepEqual([starving.hungry, starving.hungryAt, starving.hungerLevel], [true, null, 'critical'])
   world.flush()
@@ -786,6 +791,10 @@ check('20 idle and hidden tabs rest even with a socket open; passive reads do no
   const made = createWorld({ now: () => clock })
   const member = id('idle')
   ensureMember(made, member, 'Idle member')
+  const idleProfile = record(made, member)
+  if (!idleProfile.profile.username) made.call(member, 'member.saveProfile', { displayName: 'life_idle', bio: '', clearFace: false, look: idleProfile.profile.look, expectedRevision: idleProfile.profile.revision })
+  if (!record(made, member).profile.beninLife) made.call(member, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+  if (!record(made, member).profile.onboardedAt) made.call(member, 'member.completeOnboarding', {})
   made.connect(member, () => {}, () => {})
   const read = () => made.call(member, 'life.state', {}).state
   const silent = (duration: number) => { clock += duration; made.tick() }

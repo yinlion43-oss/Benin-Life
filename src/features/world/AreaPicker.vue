@@ -4,6 +4,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { CoarseArea, AreaSource } from '../../shared/model.ts'
 import { STARTER_PLACES } from '../../shared/places.ts'
+import { BENIN_CITY_ZONE_ANCHORS } from '../../shared/beninLife.ts'
 import { providers } from '../../config/providers.ts'
 import { supportsVehicleDistrict } from '../../world/vehicles/provenance.ts'
 import { areaFromPlace } from '../../geo/areas.ts'
@@ -82,8 +83,11 @@ watch(() => props.autoSuggest, allowed => { if (!allowed && autoRun) dropDevice(
 
 // A choice settles the question: a late answer must not offer another area after it.
 const pick = (place: { label: string; countryCode: string; anchor: { lat: number; lon: number } }, source: AreaSource): void => { dropSearch(); dropDevice(); emit('choose', areaFromPlace(place), source) }
-// Homes and driving are prepared only in the districts the vehicle map supports; the map is checked again, read-only, once a place is chosen.
-const featured = STARTER_PLACES.filter(place => supportsVehicleDistrict(areaFromPlace(place).arrivalDistrict))
+// Benin City is the intended first destination even while its region-specific homes and driving
+// are being adapted. Other destinations are grouped by the support the existing source provides.
+const beninStart = STARTER_PLACES.find(place => place.label.startsWith('Benin City'))
+const prepared = STARTER_PLACES.filter(place => place !== beninStart && supportsVehicleDistrict(areaFromPlace(place).arrivalDistrict))
+const featured = [...(beninStart ? [beninStart] : []), ...prepared]
 const further = STARTER_PLACES.filter(place => !featured.includes(place))
 const flag = (code: string): string => (/^[A-Z]{2}$/.test(code) && code !== 'ZZ' ? String.fromCodePoint(...[...code].map(c => 127397 + c.charCodeAt(0))) : '📍')
 </script>
@@ -131,13 +135,27 @@ const flag = (code: string): string => (/^[A-Z]{2}$/.test(code) && code !== 'ZZ'
     <p v-else-if="searched && !searching" class="notice">No place matched “{{ searchedFor }}”. Try the name of a wider area, such as the town or city.</p>
 
     <div v-if="starting" class="stack tight">
-      <span id="starters-ready" class="label">Best prepared: homes and driving work here</span>
+      <span id="starters-ready" class="label">Benin Life starts in Benin City</span>
       <div class="row wrap" role="group" aria-labelledby="starters-ready">
-        <button v-for="place in featured" :key="place.label" class="btn sm primary" type="button" :disabled="busy" @click="pick(place, 'manual')">
+        <button v-if="beninStart" class="btn sm primary" type="button" :disabled="busy" @click="pick(beninStart, 'manual')">
+          <span aria-hidden="true">{{ flag(beninStart.countryCode) }}</span>{{ beninStart.label }}
+        </button>
+      </div>
+      <span id="benin-zones" class="label">Mapped Benin City neighborhood starts</span>
+      <p class="muted tiny">These public map anchors help you choose a starting area. They are points, not neighborhood boundaries; some planned zones are not mapped clearly enough yet.</p>
+      <div class="row wrap" role="group" aria-labelledby="benin-zones">
+        <button v-for="place in BENIN_CITY_ZONE_ANCHORS" :key="`${place.label}-${place.osmId}`" class="btn sm" type="button" :disabled="busy" @click="pick(place, 'manual')">
           <span aria-hidden="true">{{ flag(place.countryCode) }}</span>{{ place.label }}
         </button>
       </div>
-      <span id="starters-more" class="label">Other well-known places: streets and trips, no homes or driving yet</span>
+      <p class="muted tiny">Neighborhood anchor data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>, available under the ODbL. Pins link to mapped public features.</p>
+      <span id="starters-ready-more" class="label">Other places with prepared homes and driving</span>
+      <div class="row wrap" role="group" aria-labelledby="starters-ready-more">
+        <button v-for="place in prepared" :key="place.label" class="btn sm" type="button" :disabled="busy" @click="pick(place, 'manual')">
+          <span aria-hidden="true">{{ flag(place.countryCode) }}</span>{{ place.label }}
+        </button>
+      </div>
+      <span id="starters-more" class="label">Other places: streets and trips</span>
       <div class="row wrap" role="group" aria-labelledby="starters-more">
         <button v-for="place in further" :key="place.label" class="btn sm" type="button" :disabled="busy" @click="pick(place, 'manual')">
           <span aria-hidden="true">{{ flag(place.countryCode) }}</span>{{ place.label }}

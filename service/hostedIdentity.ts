@@ -136,7 +136,7 @@ export function createHostedIdentityAdapter(binding: HostedBinding, options: ({ 
       // Signed out, or ended by the provider, between the exchange and now: the token is worth nothing.
       sessionActive(held.subject, held.generation)
       const memberId = hostedMemberId(held.subject)
-      return { memberId, subject: held.subject, name: local ? 'Allworld member' : 'Goalmatic member', reviewer: false, ...(held.generation === null ? {} : { generation: held.generation }) }
+      return { memberId, subject: held.subject, name: local ? 'Benin Life member' : 'Goalmatic member', reviewer: false, ...(held.generation === null ? {} : { generation: held.generation }) }
     },
     /** The hosted listener must call this before every incoming frame and outgoing private event. */
     assertActive(actor: HostedActor): void {

@@ -95,6 +95,6 @@ export async function renewHostedWorld(config: HostedWorldConfig, challenge: str
   signal.throwIfAborted()
   // The same server-relative bound as at sign-in; the server decides whether the code is still good.
   if (!record(result) || typeof result.code !== 'string' || !/^gmc_[A-Za-z0-9_-]{43}$/.test(result.code)
-    || serverRelativeLifetime(result) === null) throw new WorldError('unauthorized', 'Allworld could not renew this session.')
+    || serverRelativeLifetime(result) === null) throw new WorldError('unauthorized', 'Benin Life could not renew this session.')
   return result.code
 }

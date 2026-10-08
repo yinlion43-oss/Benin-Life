@@ -1,12 +1,13 @@
 <script setup lang="ts">
 // First run: choose where to start, make your character, then arrive. Starting in a place is not claiming to be there.
-import { computed, inject, onBeforeUnmount, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { brand } from '../../brand.ts'
+import { BIG_DREAMS, PLAYER_TRAITS, normalizeBeninUsername } from '../../shared/beninLife.ts'
+import type { BigDream, PlayerTraitId } from '../../shared/beninLife.ts'
 import { guestAccess } from '../../shared/guest.ts'
 import { CURRENT_AREA_TTL_DAYS } from '../../shared/model.ts'
 import type { AreaSource, AvatarLook, CoarseArea, FaceAudience } from '../../shared/model.ts'
 import { countryDefaults } from '../../shared/places.ts'
-import { TRAVEL } from '../../shared/travel.ts'
 import { preflightArea } from './mapPreflight.ts'
 import type { MapPreflight } from './mapPreflight.ts'
 import { defaultLookFor, featuredOutfits, suggestedCast } from '../../config/wardrobe.ts'
@@ -40,12 +41,15 @@ const guestLine = computed(() => {
   return session.persisted ? 'Playing as a guest. This character stays on this device.' : 'Playing as a guest. This character lasts only while this tab stays open.'
 })
 const { card: creator } = useCreatorCard(() => app.mode === 'hosted' && app.phase === 'ready')
-const step = ref<1 | 2 | 3>(1)
-// 1 where you are · 2 your character · 3 arrive
-// The name a test member or a new guest starts with is the service's placeholder, not a choice.
-const username = ref(me.username ? me.username.replace(/^@/, '') : '')
+const step = ref<1 | 2 | 3 | 4 | 5>(1)
+// 1 @username · 2 character · 3 traits · 4 dream · 5 city and arrival
+const name = ref(me.username ?? (me.displayName.startsWith('Test member') || (guest.value && me.displayName === 'Guest') ? '' : me.displayName))
+const checkedUsername = ref<{ username: string; available: boolean } | null>(null)
+const checkingUsername = ref(false)
 const look = ref<AvatarLook>(copy(me.look))
 const area = ref<{ area: CoarseArea; source: AreaSource } | null>(null)
+const selectedTraits = ref<PlayerTraitId[]>(me.beninLife ? [...me.beninLife.traits] : [])
+const dream = ref<BigDream | null>(me.beninLife?.dream ?? null)
 const presence = ref<'here' | 'browsing'>('browsing')
 const discoverable = ref(false)
 const busy = ref(false)
@@ -53,18 +57,38 @@ const problem = ref('')
 const face = useFace()
 const clearPhotoOnSave = ref(false)
 const language = navigator.language || 'en'
-const usernameOk = computed(() => /^[a-z0-9_]{3,24}$/.test(username.value.trim()))
+const normalizedUsername = computed(() => normalizeBeninUsername(name.value))
+const usernameAvailable = computed(() => Boolean(normalizedUsername.value && checkedUsername.value?.available && checkedUsername.value.username.toLowerCase() === normalizedUsername.value.toLowerCase()))
+const nameOk = computed(() => Boolean(normalizedUsername.value))
+watch(name, () => { checkedUsername.value = null })
+
+async function checkUsername(): Promise<void> {
+  const username = normalizedUsername.value
+  if (!username || checkingUsername.value) return
+  checkingUsername.value = true
+  checkedUsername.value = null
+  try { checkedUsername.value = await api('member.usernameAvailable', { username }) }
+  catch (error) { problem.value = messageOf(error) }
+  finally { checkingUsername.value = false }
+}
+
+function toggleTrait(id: PlayerTraitId): void {
+  selectedTraits.value = selectedTraits.value.includes(id)
+    ? selectedTraits.value.filter(trait => trait !== id)
+    : selectedTraits.value.length < 2 ? [...selectedTraits.value, id] : selectedTraits.value
+}
 
 async function saveCharacter(): Promise<void> {
-  if (!usernameOk.value || busy.value || face.busy.value) return
+  if (!nameOk.value || !usernameAvailable.value || busy.value || face.busy.value) return
   busy.value = true
   problem.value = ''
   try {
-    const { profile } = await api('member.saveProfile', { username: username.value.trim().toLowerCase(), bio: app.me!.bio, look: look.value, expectedRevision: app.me!.revision, clearFace: clearPhotoOnSave.value })
+    const { profile } = await api('member.saveProfile', { displayName: normalizedUsername.value!, bio: app.me!.bio, look: look.value, expectedRevision: app.me!.revision, clearFace: clearPhotoOnSave.value })
     clearPhotoOnSave.value = false
     app.me = profile
     look.value = copy(profile.look)
     await face.load()
+    name.value = profile.username ?? profile.displayName
     step.value = 3
   } catch (error) { problem.value = messageOf(error) } finally { busy.value = false }
 }
@@ -101,6 +125,7 @@ function editLook(next: AvatarLook): void {
   if (next.body !== look.value.body) pickedBody.value = true
   lookTouched.value = true; look.value = next
 }
+function continueToDream(): void { if (selectedTraits.value.length === 2) step.value = 4 }
 // New members in one place should not all step out as the same person in the same clothes:
 // each starts as one of the first few featured characters and outfits, chosen by their id.
 function startingLook(countryCode: string): AvatarLook {
@@ -158,11 +183,11 @@ async function chooseArea(chosen: CoarseArea, source: AreaSource): Promise<void>
   presence.value = 'browsing'
   discoverable.value = false
   if (!lookTouched.value) look.value = { ...startingLook(chosen.countryCode), face: look.value.face }
-  step.value = 2
+  step.value = 5
 }
 
 async function finish(): Promise<void> {
-  if (!area.value || busy.value) return
+  if (!area.value || busy.value || selectedTraits.value.length !== 2 || !dream.value) return
   busy.value = true
   problem.value = ''
   try {
@@ -171,9 +196,11 @@ async function finish(): Promise<void> {
     else await api('member.setBrowsing', { area: area.value.area })
     const defaults = countryDefaults(area.value.area.countryCode)
     await api('member.savePreferences', { preferences: { ...app.me!.preferences, language: language.slice(0, 12), units: defaults.units, discoverable: here && discoverable.value && !guest.value } })
+    const { profile: character } = await api('beninLife.initialize', { traits: [selectedTraits.value[0]!, selectedTraits.value[1]!], dream: dream.value })
+    app.me = character
     const { profile } = await api('member.completeOnboarding', {})
     app.me = profile
-    toast(`Welcome, @${profile.username}.`, 'good')
+    toast(`Welcome, ${profile.displayName}. Your life starts as ${profile.beninLife?.lifeStatus ?? 'a new story'}.`, 'good')
   } catch (error) { problem.value = messageOf(error) } finally { busy.value = false }
 }
 </script>
@@ -185,39 +212,40 @@ async function finish(): Promise<void> {
         <BrandMark :size="38" />
         <div class="grow">
           <strong>{{ brand.name }}</strong>
-          <div class="muted tiny">Step {{ step }} of 3</div>
+          <div class="muted tiny">Step {{ step }} of 5</div>
         </div>
         <ol class="steps" aria-label="Progress">
-          <li v-for="n in 3" :key="n" :class="{ done: n < step, now: n === step }" :aria-current="n === step ? 'step' : undefined"><span class="sr-only">Step {{ n }}</span></li>
+          <li v-for="n in 5" :key="n" :class="{ done: n < step, now: n === step }" :aria-current="n === step ? 'step' : undefined"><span class="sr-only">Step {{ n }}</span></li>
         </ol>
       </header>
       <p v-if="guest" class="muted small guest-line">{{ guestLine }}</p>
 
       <section v-if="step === 1" class="stack loose">
         <div>
-          <h1>Where do you want to start?</h1>
-          <p class="muted">Allworld is drawn on real maps. Homes and driving are prepared in Yaba (Lagos) and Wuse (Abuja), so they are the best places to begin. Anywhere else in the world you can still walk the streets, but there are no homes or driving there yet. You arrive at a public spot, never at your address, and we do not ask for one.</p>
-          <p class="muted small">Your starting place is saved when you arrive. After that, a far city is a trip with a fare, and borders can need a passport and a visa. Districts within about {{ TRAVEL.localRangeKm }} km can be walked into.</p>
+          <h1>Choose your unique @username</h1>
+          <p class="muted">Your @username is your identity across Benin Life: on the map, in messages, BeninBank, work, businesses, property, football and social life. It is permanent after your character starts.</p>
         </div>
-        <!-- Arrived through a friend's invite link: starting where they are is the first choice. -->
-        <div v-if="social.invitation?.area" class="card tint-amber row invited">
-          <span class="icon-chip" aria-hidden="true">💌</span>
-          <span class="grow"><strong>{{ social.invitation.inviter.displayName }} invited you</strong><span class="muted small" style="display: block">Start in {{ social.invitation.area.label }}.{{ guest ? ' Meeting people waits until your character is saved.' : ' You can then find each other.' }}</span></span>
-          <button class="btn primary sm" type="button" :disabled="checking" @click="chooseArea(social.invitation.area, 'manual')">Start there</button>
+        <label class="field" style="max-width: 420px">
+          <span>Username</span>
+          <input v-model="name" class="input" maxlength="21" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="EdoBigBoy" />
+          <small class="muted">3–20 letters, numbers or underscores. You can include the @ sign.</small>
+        </label>
+        <div class="row wrap">
+          <button class="btn sm" type="button" :disabled="!nameOk || checkingUsername" @click="checkUsername">{{ checkingUsername ? 'Checking…' : 'Check availability' }}</button>
+          <span v-if="usernameAvailable" class="chip leaf" role="status">{{ checkedUsername?.username }} is available</span>
+          <span v-else-if="checkedUsername && !checkedUsername.available" class="chip coral" role="status">{{ checkedUsername.username }} is taken</span>
         </div>
-        <AreaPicker :language="language" :auto-suggest="!guest" :busy="checking" starting @choose="chooseArea" />
-        <div v-if="checking" class="row" role="status">
-          <div class="spinner" aria-hidden="true"></div>
-          <span class="grow muted small">Checking the map. Nothing is saved yet.</span>
-          <button class="btn sm" type="button" @click="cancelCheck">Cancel</button>
+        <p v-if="problem" class="notice coral" role="alert">{{ problem }}</p>
+        <div class="foot">
+          <button class="btn primary" type="button" :disabled="!usernameAvailable || checkingUsername" @click="step = 2">Continue</button>
+          <span v-if="nameOk && !checkedUsername" class="muted small">Check that your handle is free to continue.</span>
         </div>
-        <p v-if="pickProblem" class="notice coral" role="alert">{{ pickProblem }}</p>
       </section>
 
       <section v-else-if="step === 2" class="stack loose">
         <div>
           <h1>Make your character</h1>
-          <p class="muted">Choose who you play as, set the skin tone and outfit you like, or put your own face on the character from a picture. You can change it whenever you want. Your unique @username is your identity everywhere in Benin Life.</p>
+          <p class="muted">Choose who you play as, set the skin tone and outfit you like, or put your own face on the character from a picture. You can change your appearance later.</p>
         </div>
         <fieldset class="starters">
           <legend class="label">Who do you play as?</legend>
@@ -228,29 +256,81 @@ async function finish(): Promise<void> {
           </div>
           <small class="muted">Pick one to start from. Clothes, skin tone, hair and your own face come next, and there are more characters below.</small>
         </fieldset>
-        <label class="field" style="max-width: 320px">
-          <span>Unique @username</span>
-          <input v-model="username" class="input" maxlength="24" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="For example, oba_benin" />
-          <small class="muted">3–24 characters: lowercase letters, numbers and underscores. This is the identity other players use.</small>
-        </label>
+        <p class="chip amber">Your identity: {{ normalizedUsername }}</p>
         <AvatarEditor
           :look="look" :face="face.scan.value" :face-busy="face.busy.value || busy" :allow-photo-face="!app.guest" :country-code="area?.area.countryCode" :place-label="area?.area.label" @update:look="editLook"
           @set-face="setFace" @set-face-audience="setFaceAudience" @clear-face="clearFace"
         />
         <p v-if="problem" class="notice coral" role="alert">{{ problem }}</p>
         <div class="foot">
-          <button class="btn primary" type="button" :disabled="!usernameOk || !pickedBody || busy || face.busy.value" @click="saveCharacter">{{ busy ? 'Saving…' : 'Continue' }}</button>
+          <button class="btn primary" type="button" :disabled="!usernameAvailable || !pickedBody || busy || face.busy.value" @click="saveCharacter">{{ busy ? 'Saving…' : 'Continue' }}</button>
           <button class="btn ghost" type="button" :disabled="busy" @click="step = 1">Back</button>
           <span v-if="!pickedBody" class="muted small">Pick who you play as, at the top.</span>
-          <span v-else-if="!nameOk" class="muted small">Use a valid @username: 3–24 lowercase letters, numbers or underscores.</span>
         </div>
       </section>
 
-      <section v-else-if="step === 3 && area" class="stack loose">
+      <section v-else-if="step === 3" class="stack loose">
+        <div>
+          <h1>Choose two traits</h1>
+          <p class="muted">Traits shape how your character grows. Pick two different traits.</p>
+        </div>
+        <div class="row wrap" role="group" aria-label="Choose two character traits">
+          <button v-for="trait in PLAYER_TRAITS" :key="trait.id" class="card choice" type="button" role="checkbox" :aria-checked="selectedTraits.includes(trait.id)" :class="{ on: selectedTraits.includes(trait.id) }" @click="toggleTrait(trait.id)">
+            <span class="grow"><strong>{{ trait.label }}</strong></span><span class="chip" aria-hidden="true">{{ selectedTraits.includes(trait.id) ? 'Selected' : 'Choose' }}</span>
+          </button>
+        </div>
+        <p class="muted small" role="status">{{ selectedTraits.length }} of 2 selected</p>
+        <div class="foot">
+          <button class="btn primary" type="button" :disabled="selectedTraits.length !== 2" @click="continueToDream">Continue</button>
+          <button class="btn ghost" type="button" @click="step = 2">Back</button>
+        </div>
+      </section>
+
+      <section v-else-if="step === 4" class="stack loose">
+        <div>
+          <h1>Choose your Big Dream</h1>
+          <p class="muted">Your dream is a long-term direction. It does not lock you out of other careers or achievements.</p>
+        </div>
+        <fieldset class="choices">
+          <legend class="label">What do you want to become?</legend>
+          <label v-for="entry in BIG_DREAMS" :key="entry" class="card choice" :class="{ on: dream === entry }">
+            <input v-model="dream" type="radio" :value="entry" class="sr-only" />
+            <span class="grow"><strong>{{ entry }}</strong></span>
+          </label>
+        </fieldset>
+        <div class="foot">
+          <button class="btn primary" type="button" :disabled="!dream" @click="step = 5">Continue</button>
+          <button class="btn ghost" type="button" @click="step = 3">Back</button>
+        </div>
+      </section>
+
+      <section v-else-if="step === 5 && !area" class="stack loose">
+        <div>
+          <h1>Start in Benin City</h1>
+          <p class="muted">Choose Benin City to begin your story in Edo State. You can also browse another mapped place. Your character arrives at a public spot; we never ask for your home address.</p>
+          <p class="muted small">Your starting place is saved when you arrive. After that, a far city is a trip with a fare, and borders can need a passport and a visa. Nearby districts can be walked into.</p>
+        </div>
+        <!-- Arrived through a friend's invite link: starting where they are is the first choice. -->
+        <div v-if="social.invitation?.area" class="card tint-amber row invited">
+          <span class="icon-chip" aria-hidden="true">💌</span>
+          <span class="grow"><strong>{{ social.invitation.inviter.displayName }} invited you</strong><span class="muted small" style="display: block">Start in {{ social.invitation.area.label }}.{{ guest ? ' Meeting people waits until your character is saved.' : ' You can then find each other.' }}</span></span>
+          <button class="btn primary sm" type="button" :disabled="checking" @click="chooseArea(social.invitation.area, 'manual')">Start there</button>
+        </div>
+        <AreaPicker :language="language" :auto-suggest="false" :busy="checking" starting @choose="chooseArea" />
+        <div v-if="checking" class="row" role="status">
+          <div class="spinner" aria-hidden="true"></div>
+          <span class="grow muted small">Checking the map. Nothing is saved yet.</span>
+          <button class="btn sm" type="button" @click="cancelCheck">Cancel</button>
+        </div>
+        <p v-if="pickProblem" class="notice coral" role="alert">{{ pickProblem }}</p>
+        <button class="btn ghost" type="button" @click="step = 4">Back</button>
+      </section>
+
+      <section v-else-if="step === 5 && area" class="stack loose">
         <div>
           <span class="chip amber">Starting place</span>
           <h1>{{ area.area.label }}</h1>
-          <p class="muted">{{ area.source === 'device-suggested' ? 'Suggested from your device, rounded to a wide area.' : 'Chosen by you from the list or search, not read from your device.' }} Local time there follows {{ area.area.timezone.replace('_', ' ') }}. From here your character gets around in the game: on foot nearby, and by booking trips — with a passport and visas where borders need them. {{ map?.homes.available && map.driving.available ? 'Homes and driving are prepared here.' : 'There are no homes or driving here yet; the streets and trips work.' }}</p>
+          <p class="muted">{{ area.source === 'device-suggested' ? 'Suggested from your device, rounded to a wide area.' : 'Chosen by you from the list or search, not read from your device.' }} Local time there follows {{ area.area.timezone.replace('_', ' ') }}. From here your character gets around in the game: on foot nearby, and by booking trips — with a passport and visas where borders need them. {{ map?.homes.available && map.driving.available ? 'Homes and driving are prepared here.' : 'Some location-specific home and driving features are still being adapted here; streets and trips work.' }}</p>
           <p v-if="map && map.status === 'limited'" class="muted small">{{ map.map.summary }}</p>
         </div>
         <fieldset class="choices">
@@ -278,8 +358,8 @@ async function finish(): Promise<void> {
         <CreatorDisclosure :ready="Boolean(creator?.ready && creator.link !== 'self')" />
         <div class="foot">
           <button class="btn primary" type="button" :disabled="busy" @click="finish">{{ busy ? 'Arriving…' : 'Arrive' }}</button>
-          <button class="btn ghost" type="button" :disabled="busy" @click="step = 2">Back to my character</button>
-          <button class="btn ghost" type="button" :disabled="busy" @click="step = 1">Choose another place</button>
+          <button class="btn ghost" type="button" :disabled="busy" @click="step = 4">Back to my dream</button>
+          <button class="btn ghost" type="button" :disabled="busy" @click="{ area = null; step = 5 }">Choose another place</button>
         </div>
       </section>
     </div>

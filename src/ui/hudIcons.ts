@@ -2,7 +2,7 @@
 // Tokens: "c:cx,cy,r" a circle, "d:cx,cy" a filled dot, anything else a path on a 24 px grid.
 export type HudIconName =
   | 'menu' | 'pin' | 'people' | 'chat' | 'smile' | 'coin' | 'food' | 'energy' | 'enter' | 'exit' | 'work' | 'dining' | 'basket' | 'home' | 'car'
-  | 'map' | 'compass' | 'close' | 'chevron' | 'info' | 'sound' | 'mute' | 'zoom-in' | 'zoom-out' | 'turn-left' | 'turn-right' | 'fullscreen'
+  | 'map' | 'phone' | 'compass' | 'close' | 'chevron' | 'info' | 'sound' | 'mute' | 'zoom-in' | 'zoom-out' | 'turn-left' | 'turn-right' | 'fullscreen'
   | 'fullscreen-exit' | 'rotate' | 'help' | 'save' | 'user' | 'bell' | 'sliders' | 'note' | 'globe' | 'plane' | 'bag' | 'clipboard' | 'dice'
   | 'groups' | 'timer' | 'door' | 'walk' | 'check' | 'back' | 'send' | 'mic' | 'moon' | 'wifi'
   | 'g-wave' | 'g-nod' | 'g-clap' | 'g-cheer' | 'g-dance' | 'g-talk'
@@ -24,6 +24,7 @@ export const SHAPES: Readonly<Record<HudIconName, readonly string[]>> = {
   home: ['M3.5 11 12 4l8.5 7', 'M6 9.5V20h12V9.5', 'M10 20v-5.5h4V20'],
   car: ['M4 14.5 5.8 9.2A2 2 0 0 1 7.7 7.8h8.6a2 2 0 0 1 1.9 1.4L20 14.5V18h-2.4v-1.5H6.4V18H4z', 'c:7.6,13.3,.9', 'c:16.4,13.3,.9'],
   map: ['M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z', 'M9 4v13.5', 'M15 6.5V20'],
+  phone: ['M7 3.5h10a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z', 'M10 6.5h4', 'c:12,17.5,.65'],
   compass: ['c:12,12,9', 'M15.6 8.4 13.4 13.4 8.4 15.6 10.6 10.6z'],
   close: ['M6 6l12 12', 'M18 6 6 18'],
   chevron: ['M6 9.5l6 6 6-6'],

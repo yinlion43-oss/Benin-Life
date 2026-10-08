@@ -3,6 +3,7 @@
 // Prints one PASS line per check and exits non-zero on the first failure.
 import assert from 'node:assert/strict'
 import type { MemberId } from '../src/shared/ids.ts'
+import { BIG_DREAMS, PLAYER_TRAITS } from '../src/shared/beninLife.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { CoarseArea, ErrorCode, RoomRef } from '../src/shared/model.ts'
 import type { ServerEvent } from '../src/shared/protocol.ts'
@@ -12,7 +13,7 @@ import type { TravelState } from '../src/shared/travel.ts'
 import { areaFromPlace } from '../src/geo/areas.ts'
 import type { Persistence, World } from '../service/kernel.ts'
 import { createWorld } from '../service/index.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
 import { roomOf } from '../service/rooms.ts'
 import { recordEarning } from '../service/travel.ts'
 import { careerPoints, spendPoints } from '../service/work.ts'
@@ -45,6 +46,15 @@ function makeWorld(): World {
   const made = createWorld({ now: () => now, persistence })
   for (const name of names) {
     ensureMember(made, id(name), `Member ${name.toUpperCase()}`)
+    const member = record(made, id(name))
+    if (!member.profile.username) {
+      made.call(id(name), 'member.saveProfile', { displayName: `travel_${name}`, bio: '', clearFace: false, look: member.profile.look, expectedRevision: member.profile.revision })
+    }
+    const ready = record(made, id(name))
+    if (!ready.profile.beninLife) {
+      made.call(id(name), 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+    }
+    if (!record(made, id(name)).profile.onboardedAt) made.call(id(name), 'member.completeOnboarding', {})
     made.connect(id(name), frame => { if (frame.t === 'event') (events[id(name)] ??= []).push(frame.event) }, () => {})
   }
   return made
@@ -126,7 +136,7 @@ function wait(seconds: number): void { now += seconds * SECOND; world.tick() }
 
 // ── 1–3 Arriving, walking, street rooms ──
 
-check('1 first arrival sets location and home country and grants 150 coins once', () => {
+check('1 first arrival sets location and home country and grants 150 naira once', () => {
   const before = travel(A)
   assert.equal(before.location, null)
   assert.equal(before.homeCountry, null)
@@ -137,7 +147,7 @@ check('1 first arrival sets location and home country and grants 150 coins once'
   const after = travel(A)
   assert.deepEqual(after.location, ibadan)
   assert.equal(after.homeCountry, 'NG')
-  assert.equal(after.balance, TRAVEL.startingCoins)
+  assert.equal(after.balance, TRAVEL.startingNaira)
   assert.equal(after.balance, 150)
   assert.equal(after.passport.status, 'none')
   const entries = ledger(A)
@@ -193,6 +203,14 @@ check('3 street guard: far district refused, local district and its venues allow
   // A synthetic owner in Yaba, Lagos: a placed home, and the authoritative walk from the public arrival to its front door.
   const owner = id('owner')
   ensureMember(world, owner, 'Home owner')
+  const ownerProfile = record(world, owner)
+  if (!ownerProfile.profile.username) {
+    world.call(owner, 'member.saveProfile', { displayName: 'travel_owner', bio: '', clearFace: false, look: ownerProfile.profile.look, expectedRevision: ownerProfile.profile.revision })
+  }
+  if (!record(world, owner).profile.beninLife) {
+    world.call(owner, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+  }
+  if (!record(world, owner).profile.onboardedAt) world.call(owner, 'member.completeOnboarding', {})
   world.connect(owner, () => {}, () => {})
   arriveAt(owner, lagos)
   const arrival = enter(owner, lagos)
@@ -305,15 +323,15 @@ check('4 domestic trip Ibadan to Lagos: fare, ledger, transit, arrival', () => {
   rejects('forbidden', () => enter(A, ibadan), /Book a trip/)
 })
 
-check('5 not enough coins: quote and booking name the shortfall, nothing is deducted', () => {
+check('5 not enough naira: quote and booking name the shortfall, nothing is deducted', () => {
   const terms = termsFrom(lagos, abuja)
   const offer = quote(A, abuja)
   assert.deepEqual([offer.mode, offer.fare, offer.allowed], ['rail', terms.fare, false])
   const short = terms.fare - 65
   assert.deepEqual(offer.requirements.map(item => [item.kind, item.met]), [['funds', false]])
-  assert.match(offer.reason, new RegExp(`^You need ${short} more coins`))
+  assert.match(offer.reason, new RegExp(`^You need ${short} more naira`))
   const entries = ledger(A).length
-  rejects('conflict', () => book(A, abuja), new RegExp(`You need ${short} more coins`))
+  rejects('conflict', () => book(A, abuja), new RegExp(`You need ${short} more naira`))
   assert.equal(balance(A), 65)
   assert.equal(ledger(A).length, entries)
   assert.equal(travel(A).trip, null)
@@ -334,7 +352,7 @@ check('6 ECOWAS: Ghana and Togo need a passport but no visa; passport is paid, p
     assert.match(offer.reason, /You need a passport/)
   }
   rejects('forbidden', () => book(B, accra), /You need a passport/)
-  rejects('conflict', () => world.call(B, 'travel.passportApply', {}), /^You need 250 more coins/)
+  rejects('conflict', () => world.call(B, 'travel.passportApply', {}), /^You need ₦250 more/)
   assert.equal(balance(B), 150)
   assert.equal(travel(B).passport.status, 'none')
 
@@ -409,7 +427,7 @@ check('7 visas: required outside the bloc, refused with the exact reason, approv
   wait(1)
   let visa = travel(C).visas[0]!
   assert.equal(visa.status, 'refused')
-  assert.equal(visa.note, `Funds were below the required ${kenyaFare} coins: you had ${held - 450}.`)
+  assert.equal(visa.note, `Funds were below the required ${kenyaFare} naira: you had ${held - 450}.`)
   assert.equal(visa.validUntil, null)
   assert.equal(balance(C), held - 450, 'the fee is not refunded')
   assert.ok(!ledger(C).some(entry => entry.kind === 'refund'))
@@ -575,20 +593,20 @@ check('12 booking twice in transit is a conflict and charges one fare; time sett
   assert.equal(travel(K).recentTrips.length, 1)
   // Back again: a stale quote is worth nothing, the fare is worked out at booking from where the avatar now is.
   const stale = quote(K, ibadan)
-  assert.equal(stale.allowed, false, 'only 65 coins left')
-  rejects('conflict', () => book(K, stale.to), /You need 20 more coins/)
+  assert.equal(stale.allowed, false, 'only 65 naira left')
+  rejects('conflict', () => book(K, stale.to), /You need 20 more naira/)
   assert.equal(balance(K), 150 - fare)
 })
 
 check('13 wallet safety: no negative balance anywhere, spends are refused whole, earnings are logged not minted', () => {
-  rejects('conflict', () => spendPoints(world, K, 66), /^You need 1 more coin\./)
+  rejects('conflict', () => spendPoints(world, K, 66), /^You need ₦1 more\./)
   rejects('invalid', () => spendPoints(world, K, -5))
   rejects('invalid', () => spendPoints(world, K, Number.NaN))
   assert.equal(careerPoints(world, K), 65)
   spendPoints(world, K, 0)
   assert.equal(careerPoints(world, K), 65)
   recordEarning(world, K, 30, 'work', 'Shift at Corner café')
-  assert.equal(balance(K), 65, 'recording an earning adds no coins')
+  assert.equal(balance(K), 65, 'recording an earning adds no naira')
   assert.deepEqual([ledger(K)[0]!.kind, ledger(K)[0]!.amount, ledger(K)[0]!.text, ledger(K)[0]!.balanceAfter], ['work', 30, 'Shift at Corner café', 65])
   recordEarning(world, K, -10, 'game', 'not an earning')
   assert.equal(ledger(K)[0]!.kind, 'work')
@@ -607,7 +625,7 @@ check('13 wallet safety: no negative balance anywhere, spends are refused whole,
 
 // ── 14–15 Members without a location, restarts ──
 
-check('14 a member with no location may look at one place, not roam; a restart keeps trips and coins', () => {
+check('14 a member with no location may look at one place, not roam; a restart keeps trips and naira', () => {
   const fresh = id('fresh')
   ensureMember(world, fresh, 'Fresh member')
   assert.equal(enter(fresh, manchester).snapshot.ref.kind, 'district')
@@ -643,10 +661,10 @@ check('15 a member from before travel existed starts where they said they are, o
   const state = travel(H)
   assert.deepEqual([state.location?.label, state.location?.countryCode, state.homeCountry], ['Bodija, Ibadan', 'NG', 'NG'])
   assert.deepEqual(Object.keys(state.location!).sort(), Object.keys(ibadan).sort(), 'the location is a plain area')
-  const coins = balance(H)
+  const naira = balance(H)
   travel(H)
   arriveAt(H, ibadan)
-  assert.equal(balance(H), coins)
+  assert.equal(balance(H), naira)
   assert.equal(ledger(H).filter(entry => entry.kind === 'starting').length, 1)
   rejects('forbidden', () => world.call(H, 'member.setBrowsing', { area: nairobi }), /Book a trip/)
 })

@@ -31,7 +31,7 @@ import type { HostedBinding, HostedSubject } from './hostedIdentity.ts'
 import { hostedMemberId } from './hostedIdentity.ts'
 import type { Connection, World } from './kernel.ts'
 import { conversationPeer } from './direct.ts'
-import { automaticFriendsOf, creatorOf, ensureMember, exists, record, removeFriendship } from './members.ts'
+import { automaticFriendsOf, beninLifeReady, creatorOf, ensureMember, exists, record, removeFriendship } from './members.ts'
 
 /** Who the transport is serving once a guest capability has been accepted. Same shape as the other actors. */
 export interface GuestActor { memberId: MemberId; name: string; reviewer: false; guest: true }
@@ -178,7 +178,7 @@ export function registerGuests(world: World, scope: GuestScope, options: GuestSe
   })
   function saved(memberId: MemberId): SavedCharacter {
     const { profile } = record(world, memberId)
-    return { memberId, displayName: profile.displayName, look: { ...profile.look, face: null }, createdAt: profile.createdAt, onboarded: profile.onboardedAt !== null }
+    return { memberId, displayName: profile.displayName, look: { ...profile.look, face: null }, createdAt: profile.createdAt, onboarded: beninLifeReady(world, memberId) }
   }
 
   /**

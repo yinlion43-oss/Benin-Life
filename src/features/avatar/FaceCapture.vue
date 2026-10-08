@@ -384,7 +384,7 @@ function keep(): void {
                 <span>Who sees your photo face</span>
                 <select v-model="audience" class="select">
                   <option value="friends">Friends only — others see the character’s own face</option>
-                  <option value="everyone">Everyone in Allworld</option>
+                  <option value="everyone">Everyone in Benin Life</option>
                 </select>
               </label>
             </template>

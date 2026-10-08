@@ -10,6 +10,7 @@ import { world, getEngine, getStreetContext, walkToPlace, enterVenue, returnToAr
 import { travel } from '../../state/travel.ts'
 import { toast } from '../../state/app.ts'
 import { categoryStyle } from '../../geo/categoryStyle.ts'
+import { BENIN_CITY_LANDMARKS, BENIN_CITY_ZONE_ANCHORS } from '../../shared/beninLife.ts'
 import MemberCard from '../people/MemberCard.vue'
 import MemberBadge from '../../ui/MemberBadge.vue'
 import StreetMap from './StreetMap.vue'
@@ -53,6 +54,17 @@ const mapDistrictId = computed(() => streetContext.value?.districtId ?? world.di
 const available = computed(() => mapDistrictId.value && parseDistrictId(mapDistrictId.value) && !transit.value)
 const label = (category: string) => category.replaceAll('_', ' ')
 const allCategories = computed(() => [...new Set(world.places.map(p => p.category))].sort())
+const isBeninCity = computed(() => /benin city/i.test(world.areaLabel ?? '') || BENIN_CITY_ZONE_ANCHORS.some(zone => zone.label === world.areaLabel))
+// Only surface a named landmark when the current public map tile contains that exact gazetteer
+// place. This keeps authored planning names useful without inventing a map position for them.
+const beninLandmarksHere = computed(() => {
+  if (!isBeninCity.value) return []
+  const byName = new Map(world.places.map(place => [place.name.trim().toLocaleLowerCase(), place]))
+  return BENIN_CITY_LANDMARKS.flatMap(landmark => {
+    const place = byName.get(landmark.name.toLocaleLowerCase())
+    return place ? [{ landmark, place }] : []
+  })
+})
 const filtered = computed(() => world.places.filter(p => (!categories.value.length || categories.value.includes(p.category)) && `${p.name} ${label(p.category)} ${label(p.subclass)}`.toLowerCase().includes(query.value.trim().toLowerCase())))
 const sorted = computed(() => [...filtered.value].sort((a, b) => distance(a.pos, position.value) - distance(b.pos, position.value)))
 const members = computed(() => showPeople.value ? world.members.filter(m => !friendsOnly.value || m.relation === 'friend') : [])
@@ -251,6 +263,10 @@ onBeforeUnmount(() => { disposed = true; clearInterval(timer); clearTimeout(rout
           <div class="map-sheet-head"><h2>{{ query ? 'Search results' : 'Around you' }}</h2><button class="btn icon" aria-label="Close places list" @click="listOpen = false">✕</button></div>
           <p class="map-meta">{{ filtered.length }} places · {{ indoors ? 'Street locations' : 'Nearest first' }}</p>
           <div class="map-results" @keydown="listKey">
+            <template v-if="isBeninCity && !query && !categories.length && beninLandmarksHere.length">
+              <p class="map-meta">Benin Life landmarks in this mapped area</p>
+              <button v-for="entry in beninLandmarksHere" :key="entry.place.placeId" class="map-result" @click="choose(entry.place)"><span class="map-category" :style="{ background: categoryStyle(entry.place.category).color }" aria-hidden="true">{{ categoryStyle(entry.place.category).icon }}</span><span class="grow"><strong>{{ entry.place.name }}</strong><small>{{ entry.landmark.category }} · {{ metresAway(entry.place.pos) }}</small></span><span aria-hidden="true">›</span></button>
+            </template>
             <button v-for="poi in sorted" :key="poi.placeId" class="map-result" @click="choose(poi)"><span class="map-category" :style="{ background: categoryStyle(poi.category).color }" aria-hidden="true">{{ categoryStyle(poi.category).icon }}</span><span class="grow"><strong>{{ poi.name }}</strong><small>{{ label(poi.category) }} · {{ metresAway(poi.pos) }}</small></span><span aria-hidden="true">›</span></button>
             <p v-if="!filtered.length" class="map-no-results">{{ world.places.length ? 'No places match. Try a different name or clear your category filters.' : 'No public places are mapped in this district yet. You can still choose a street point.' }}</p>
 

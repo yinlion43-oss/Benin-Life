@@ -14,7 +14,7 @@ export const ACCOUNT_PATHS: ReadonlySet<string> = new Set(['/world/account/attem
 const BODY_LIMIT = 6144
 // Root policy: a new password is 12 to 128 characters; sign-in accepts 1 to 128.
 const NEW_PASSWORD_MIN = 12, PASSWORD_MAX = 128
-const ACCOUNT_NAME = 'Allworld member'
+const ACCOUNT_NAME = 'Benin Life member'
 const digest = (value: string): string => createHash('sha256').update(value).digest('hex')
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
 

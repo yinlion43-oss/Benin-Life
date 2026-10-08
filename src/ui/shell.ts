@@ -30,6 +30,7 @@ export const NAV: readonly NavItem[] = [
   { to: '/messages', label: 'Chat', glyph: 'chat', key: 'm' },
   { to: '/arena', label: 'Games', glyph: 'dice', key: '6' },
   { to: '/map', label: 'Map', glyph: 'map', key: '', menuOnly: true },
+  { to: '/phone', label: 'Phone', glyph: 'phone', key: '' },
   { to: '/settings', label: 'Settings', glyph: 'sliders', key: ',', menuOnly: true },
   { to: '/feedback', label: 'Feedback', glyph: 'note', key: '', menuOnly: true },
 

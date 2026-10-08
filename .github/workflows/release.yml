@@ -4,6 +4,7 @@
 #            "production" environment's deployment restrictions allow it. The provider token
 #            exists only in that environment. Human approval requires configured reviewers.
 # Nothing here uses pull_request_target, workflow_run or a pull request's code.
+# Benin-Life: immutable action pins; exact Node engine pin.
 name: Release
 
 on:
@@ -23,6 +24,7 @@ concurrency:
 
 jobs:
   package:
+    if: github.repository == 'kromate/allworld'
     name: Build and gate the package
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -35,14 +37,14 @@ jobs:
       origin: ${{ vars.ALLWORLD_ORIGIN }}
     steps:
       - name: Check out the dispatched commit
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.18.0
+          node-version: '22.18.0'
 
       - name: Install dependencies from the lockfile
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -97,13 +99,13 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Workers
     needs: package
-    if: inputs.deploy && github.ref == 'refs/heads/main'
+    if: github.repository == 'kromate/allworld' && inputs.deploy && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production
     steps:
       - name: Check out the same commit
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
@@ -115,9 +117,9 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/main)" = "$GITHUB_SHA"
 
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22.18.0
+          node-version: '22.18.0'
 
       - name: Install dependencies from the lockfile (the Worker bundle includes tz-lookup)
         run: npm ci --ignore-scripts --no-audit --no-fund

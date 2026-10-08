@@ -3,7 +3,8 @@
 // Run: node scripts/verify-direct.ts — prints one PASS line per rule, exits non-zero on failure.
 import assert from 'node:assert/strict'
 import { createWorld } from '../service/index.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
+import { BIG_DREAMS, PLAYER_TRAITS, STARTING_SKILLS } from '../src/shared/beninLife.ts'
 import { roomOf } from '../service/rooms.ts'
 import { setPresenceCacheMs } from '../service/direct.ts'
 import { areaFromPlace } from '../src/geo/areas.ts'
@@ -65,7 +66,14 @@ const nextStreet: RoomRef = { kind: 'district', districtId: neighbouringDistrict
 const market: RoomRef = { kind: 'venue', districtId: ibadan.arrivalDistrict, placeId: 'p555' as never }
 const lagosStreet: RoomRef = { kind: 'district', districtId: lagos.arrivalDistrict }
 
-for (const [memberId, name] of NAMES) { ensureMember(world, memberId, name); connect(memberId) }
+for (const [memberId, name] of NAMES) {
+  ensureMember(world, memberId, name)
+  const profile = record(world, memberId).profile
+  profile.username = `@${name.toLowerCase()}`
+  profile.displayName = profile.username
+  profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
+  connect(memberId)
+}
 for (const memberId of [a, b, c, e, f, g]) world.call(memberId, 'member.setCurrentArea', { area: ibadan, source: 'manual' })
 world.call(d, 'member.setCurrentArea', { area: lagos, source: 'manual' })
 for (const [memberId] of NAMES) world.call(memberId, 'member.completeOnboarding', {})
@@ -288,7 +296,7 @@ assert.deepEqual([hello.returned, hello.wave.context, hello.wave.contextText, he
 assert.equal(got(c, 'wave.received').length, 1)
 assertWordsOnly(got(c, 'wave.received'), 'wave.received')
 let waveNote = note(c, 'social.wave')
-assert.deepEqual([waveNote.length, waveNote[0]!.category, waveNote[0]!.title, waveNote[0]!.link, waveNote[0]!.state], [1, 'social', 'Bayo waved at you', `/people?tab=nearby&wave=${hello.wave.id}`, 'active'])
+assert.deepEqual([waveNote.length, waveNote[0]!.category, waveNote[0]!.title, waveNote[0]!.link, waveNote[0]!.state], [1, 'social', '@bayo waved at you', `/people?tab=nearby&wave=${hello.wave.id}`, 'active'])
 assert.equal(code(() => world.call(b, 'wave.send', { to: c })), 'conflict', 'one waiting wave per pair')
 assert.equal(code(() => world.call(e, 'wave.back', { waveId: hello.wave.id })), 'not_found', 'only the person waved at can wave back')
 assert.equal(around(c).waves.length, 1)
@@ -332,6 +340,9 @@ for (let index = 0; index < 7; index++) {
   const memberId = id(`crowd${index}`)
   crowd.push(memberId)
   ensureMember(world, memberId, `Crowd ${index}`)
+  const crowdProfile = record(world, memberId)
+  if (!crowdProfile.profile.username) world.call(memberId, 'member.saveProfile', { displayName: `crowd_${index}`, bio: '', clearFace: false, look: crowdProfile.profile.look, expectedRevision: crowdProfile.profile.revision })
+  if (!record(world, memberId).profile.beninLife) world.call(memberId, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
   connect(memberId)
   world.call(memberId, 'member.setCurrentArea', { area: ibadan, source: 'manual' })
   world.call(memberId, 'member.completeOnboarding', {})
@@ -357,7 +368,7 @@ const invited = got(b, 'join.changed').at(-1)!.invite
 assert.deepEqual([invited.mine, invited.reach, invited.note], [false, 'walk', 'The suya is ready'], 'the invited friend is told it is within walking range')
 assertWordsOnly(invited, 'the invited view')
 let joinNote = note(b, 'social.join-me')
-assert.deepEqual([joinNote.length, joinNote[0]!.category, joinNote[0]!.title, joinNote[0]!.body, joinNote[0]!.link], [1, 'events', 'Ada invites you to join them', 'They are at Bodija Market in Bodija, Ibadan. “The suya is ready”', `/people?tab=nearby&invite=${invite.id}`])
+assert.deepEqual([joinNote.length, joinNote[0]!.category, joinNote[0]!.title, joinNote[0]!.body, joinNote[0]!.link], [1, 'events', '@ada invites you to join them', 'They are at Bodija Market in Bodija, Ibadan. “The suya is ready”', `/people?tab=nearby&invite=${invite.id}`])
 assert.equal(code(() => world.call(c, 'join.get', { inviteId: invite.id })), 'not_found', 'nobody else can see it')
 assert.equal(code(() => world.call(a, 'join.respond', { inviteId: invite.id, accept: true })), 'forbidden', 'the sender cannot answer their own')
 const accepted = world.call(b, 'join.respond', { inviteId: invite.id, accept: true })
@@ -365,7 +376,7 @@ assert.deepEqual([accepted.invite.status, accepted.way?.reach, accepted.way?.des
 assert.equal(accepted.way?.destination?.kind === 'venue' && accepted.way.destination.placeId, 'p555', 'the way names the venue to walk to')
 assert.equal(standing(b), bBefore, 'accepting moves nobody: the avatar is where it was')
 assert.equal(note(b, 'social.join-me')[0]!.state, 'resolved', 'settled when answered')
-assert.deepEqual([note(a, 'social.join-accepted').length, note(a, 'social.join-accepted')[0]!.title], [1, 'Bayo is coming to join you'])
+assert.deepEqual([note(a, 'social.join-accepted').length, note(a, 'social.join-accepted')[0]!.title], [1, '@bayo is coming to join you'])
 assert.equal(got(a, 'join.changed').at(-1)!.invite.status, 'accepted')
 assert.equal(world.call(b, 'join.respond', { inviteId: invite.id, accept: true }).way?.reach, 'walk', 'the way can be asked for again while it lasts')
 assert.equal(code(() => world.call(b, 'join.respond', { inviteId: invite.id, accept: false })), 'conflict', 'but the answer cannot be changed')
@@ -412,7 +423,7 @@ assert.deepEqual([tripNeeded.way?.reach, tripNeeded.way?.destination, tripNeeded
 assert.match(tripNeeded.way!.text, /Book a trip there from Travel/)
 assertWordsOnly(tripNeeded, 'a cross-city answer')
 assert.equal(standing(d), dBefore, 'and nobody was moved')
-assert.equal(note(a, 'social.join-accepted').at(0)!.title, 'Dara wants to join you, and needs a trip first')
+assert.equal(note(a, 'social.join-accepted').at(0)!.title, '@dara wants to join you, and needs a trip first')
 assert.equal(code(() => world.call(d, 'room.enter', { ref: market, pos: { x: 0, z: 0 }, heading: 0 })), 'forbidden', 'the travel rules still decide who may step in')
 // Home: a home is a building in a street. Private is refused, a home that stands in no street has no front door to be sent to,
 // and a placed one is gone to the way the service says: walk to its door, then go in, or book a trip first. An answer moves nobody.
@@ -426,6 +437,9 @@ function walkApproach(viewer: MemberId, homeId: HomeId): Extract<HomeApproach, {
 }
 const hauwa = id('hauwa')
 ensureMember(world, hauwa, 'Hauwa')
+const hauwaProfile = record(world, hauwa)
+if (!hauwaProfile.profile.username) world.call(hauwa, 'member.saveProfile', { displayName: 'hauwa', bio: '', clearFace: false, look: hauwaProfile.profile.look, expectedRevision: hauwaProfile.profile.revision })
+if (!record(world, hauwa).profile.beninLife) world.call(hauwa, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
 connect(hauwa)
 world.call(hauwa, 'member.setCurrentArea', { area: lagos, source: 'manual' })
 world.call(hauwa, 'member.completeOnboarding', {})
@@ -454,7 +468,7 @@ assert.equal(world.call(a, 'join.get', { inviteId: homeInvite.id }).invite.reach
 const needsTrip = world.call(a, 'join.respond', { inviteId: homeInvite.id, accept: true })
 assert.deepEqual([needsTrip.way?.reach, needsTrip.way?.destination, needsTrip.way?.areaLabel], ['travel', null, 'Yaba, Lagos'], 'a home in another city is not a door from here')
 assert.match(needsTrip.way!.text, /Book a trip from Travel/)
-assert.equal(note(d, 'social.join-accepted').at(0)!.title, 'Ada wants to join you, and needs a trip first')
+assert.equal(note(d, 'social.join-accepted').at(0)!.title, '@ada wants to join you, and needs a trip first')
 assert.equal(code(() => world.call(a, 'home.enter', { homeId: dHome })), 'conflict', 'the travel rules still decide who may step in')
 assert.equal(standing(a), aBefore, 'nobody was moved')
 // A friend in the street: a walk to the door. The door is not where she stands, going in from here is refused, and the walk is her own accepted steps.
@@ -624,13 +638,16 @@ const newcomer = id('nneka')
 ensureMember(world, newcomer, 'Nneka')
 connect(newcomer)
 const landing = world.call(newcomer, 'link.open', { token: made.token }).landing
-assert.deepEqual([landing.inviter.id, landing.inviter.displayName, landing.areaLabel, landing.own, landing.area?.arrivalDistrict], [e, 'Efe', 'Bodija, Ibadan', false, ibadan.arrivalDistrict], 'the newcomer learns who invited them and the public place to start in')
+assert.deepEqual([landing.inviter.id, landing.inviter.displayName, landing.areaLabel, landing.own, landing.area?.arrivalDistrict], [e, '@efe', 'Bodija, Ibadan', false, ibadan.arrivalDistrict], 'the newcomer learns who invited them and the public place to start in')
 assert.equal(note(e, 'social.invite-joined').length, 0, 'the inviter hears nothing until the newcomer exists in the world')
 assert.equal(code(() => world.call(newcomer, 'link.hello', { token: made.token })), 'conflict', 'no introduction before the character is made')
 world.call(newcomer, 'member.setCurrentArea', { area: landing.area!, source: 'manual' })
+const newcomerProfile = record(world, newcomer)
+if (!newcomerProfile.profile.username) world.call(newcomer, 'member.saveProfile', { displayName: 'nneka', bio: '', clearFace: false, look: newcomerProfile.profile.look, expectedRevision: newcomerProfile.profile.revision })
+if (!record(world, newcomer).profile.beninLife) world.call(newcomer, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
 world.call(newcomer, 'member.completeOnboarding', {})
 const joinedNote = note(e, 'social.invite-joined')
-assert.deepEqual([joinedNote.length, joinedNote[0]!.title, joinedNote[0]!.category, joinedNote[0]!.actor?.id], [1, 'Nneka came through your invite link', 'social', newcomer])
+assert.deepEqual([joinedNote.length, joinedNote[0]!.title, joinedNote[0]!.category, joinedNote[0]!.actor?.id], [1, '@nneka came through your invite link', 'social', newcomer])
 world.call(newcomer, 'member.me', {})
 assert.equal(note(e, 'social.invite-joined').length, 1, 'told once')
 assert.deepEqual(world.call(e, 'link.mine', {}).links[0]!.joined.map(member => member.id), [newcomer], 'the maker sees who came through it')

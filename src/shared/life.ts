@@ -326,7 +326,7 @@ const TIER_ORDER: Tier[] = ['feast', 'meal', 'light', 'snack', 'sweet', 'coffee'
 
 export interface Dish { id: string; name: string; emoji: string; tier: Tier; about: string }
 
-export const FOOD_REGIONS = ['ng', 'gh', 'wa', 'ea', 'sa', 'me', 'uk', 'eu', 'na', 'la', 'in', 'as', 'se', 'xx'] as const
+export const FOOD_REGIONS = ['ng', 'ed', 'gh', 'wa', 'ea', 'sa', 'me', 'uk', 'eu', 'na', 'la', 'in', 'as', 'se', 'xx'] as const
 export type FoodRegionId = (typeof FOOD_REGIONS)[number]
 
 /** slug, name, emoji, tier, where it is served (r restaurant, f quick bites, c café, b bar, k bakery, i ice cream), about. */
@@ -366,6 +366,18 @@ const CUISINES: Record<FoodRegionId, Cuisine> = {
       ['zobo', 'Zobo', '🥤', 'drink', 'rfcki', 'Chilled hibiscus with ginger'],
     ],
     staple: ['Garri and groundnuts', '🥣'], home: ['Home-cooked jollof', '🍛'], groceries: ['Rice, tomatoes and pepper', '🧺'],
+  },
+  ed: {
+    label: 'Edo State', countries: [],
+    rows: [
+      ['owo-yam', 'Bini Owo soup with boiled yam', '🍲', 'feast', 'r', 'Bini Owo soup served with boiled yam'],
+      ['omoebe', 'Black soup and pounded yam', '🥘', 'feast', 'r', 'Edo black soup, also called Omoebe, with pounded yam'],
+      ['omi-ukpoka', 'Omi Ukpoka corn soup', '🌽', 'meal', 'r', 'A corn soup associated with Edo’s Afemai communities'],
+      ['ogbono', 'Ogbono soup and pounded yam', '🍛', 'meal', 'r', 'African bush-mango seed soup with pounded yam'],
+      ['omisagwe', 'Omisagwe groundnut soup', '🥜', 'meal', 'r', 'Groundnut soup associated with Edo’s Etsako people'],
+      ['starch-owo', 'Cassava starch with Owo soup', '🍲', 'feast', 'r', 'Cassava starch served with Bini Owo soup'],
+    ],
+    staple: ['Garri and groundnuts', '🥣'], home: ['Home-cooked Owo soup with yam', '🍲'], groceries: ['Yam, cassava starch and soup ingredients', '🧺'],
   },
   gh: {
     label: 'Ghana', countries: ['GH'],
@@ -593,8 +605,12 @@ const CUISINES: Record<FoodRegionId, Cuisine> = {
 const COUNTRY_REGION = new Map<string, FoodRegionId>()
 for (const region of FOOD_REGIONS) for (const code of CUISINES[region].countries) COUNTRY_REGION.set(code, region)
 
-/** The cooking of a country. Unknown countries get the everyday menu. */
-export const foodRegionOf = (countryCode: string | null | undefined): FoodRegionId => COUNTRY_REGION.get((countryCode ?? '').toUpperCase()) ?? 'xx'
+/** The cooking of a country and, where authored, its first-level region. Unknown places get the everyday menu. */
+export function foodRegionOf(countryCode: string | null | undefined, firstLevelRegion?: string | null): FoodRegionId {
+  const code = (countryCode ?? '').toUpperCase()
+  if (code === 'NG' && (firstLevelRegion ?? '').trim().toLocaleLowerCase() === 'edo') return 'ed'
+  return COUNTRY_REGION.get(code) ?? 'xx'
+}
 export const foodRegionLabel = (region: FoodRegionId): string => CUISINES[region].label
 
 const dishOf = (region: FoodRegionId, row: Row): Dish => ({ id: `${region}.${row[0]}`, name: row[1], emoji: row[2], tier: row[3], about: row[5] })

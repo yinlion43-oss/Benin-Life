@@ -29,7 +29,7 @@ import type { HomeApproach } from '../src/shared/homes.ts'
 import { approachTo } from './homes.ts'
 import type { World } from './kernel.ts'
 import { requireFound } from './kernel.ts'
-import { areFriends, automaticFriendsOf, exists, friendsOf, isBlockedEitherWay, mayMessage, onBlock, onUnfriend, publicMember, record, tryPublicMember } from './members.ts'
+import { areFriends, automaticFriendsOf, beninLifeReady, exists, friendsOf, isBlockedEitherWay, mayMessage, onBlock, onUnfriend, publicMember, record, tryPublicMember } from './members.ts'
 import { emit, settle } from './notify.ts'
 import { bool, empty, id, isoInstant, obj, oneOf, optNum, str } from './parse.ts'
 import { onRoomEnter, onRoomLeave, roomMates, roomOf } from './rooms.ts'
@@ -253,7 +253,7 @@ function presenceIndex(world: World): PresenceIndex {
   if (rt.index && presenceCacheMs > 0 && now - rt.index.at < presenceCacheMs && now >= rt.index.at) return rt.index
   const index: PresenceIndex = { at: now, byCell: new Map(), areas: new Map(), total: 0 }
   for (const memberId of rt.online) {
-    if (!exists(world, memberId) || !record(world, memberId).profile.onboardedAt) continue
+    if (!exists(world, memberId) || !beninLifeReady(world, memberId)) continue
     const presence = presenceOf(world, memberId)
     index.total++
     if (!presence.point) continue
@@ -560,14 +560,14 @@ function linkFor(world: World, token: string): LinkRecord {
 function linkView(world: World, link: LinkRecord): InviteLink {
   return {
     id: link.id, token: `${link.id}.${signLink(world, link.id)}`, areaLabel: link.areaLabel, createdAt: iso(link.createdAt), expiresAt: iso(link.expiresAt),
-    joined: link.opened.flatMap(memberId => { const member = exists(world, memberId) && record(world, memberId).profile.onboardedAt ? tryPublicMember(world, link.by, memberId) : null; return member ? [member] : [] }),
+    joined: link.opened.flatMap(memberId => { const member = exists(world, memberId) && beninLifeReady(world, memberId) ? tryPublicMember(world, link.by, memberId) : null; return member ? [member] : [] }),
   }
 }
 const linksOf = (world: World, memberId: MemberId): InviteLink[] => Object.values(state(world).links)
   .filter(link => link.by === memberId && !link.revoked && link.expiresAt > world.now()).sort((x, y) => y.createdAt - x.createdAt).map(link => linkView(world, link))
 /** Tell the maker of a link, once, that someone who came through it is now in the world. */
 function announceJoined(world: World, link: LinkRecord, memberId: MemberId): void {
-  if (link.announced.includes(memberId) || memberId === link.by || !record(world, memberId).profile.onboardedAt) return
+  if (link.announced.includes(memberId) || memberId === link.by || !beninLifeReady(world, memberId)) return
   link.announced.push(memberId)
   delete state(world).cameThrough[memberId]
   world.touch()
@@ -712,7 +712,7 @@ export function registerDirect(world: World): void {
   world.onConnect(memberId => {
     rt.online.add(memberId)
     rt.index = null
-    if (!exists(world, memberId) || !record(world, memberId).profile.onboardedAt) return
+    if (!exists(world, memberId) || !beninLifeReady(world, memberId)) return
     const now = world.now()
     for (const friend of friendsOf(world, memberId)) {
       if (!world.isOnline(friend) || isBlockedEitherWay(world, memberId, friend)) continue
@@ -847,7 +847,7 @@ export function registerDirect(world: World): void {
     const origin = originOf(world, viewer)
     const here = pointOf(world, viewer) ?? origin
     const index = presenceIndex(world)
-    const connected = world.isOnline(viewer) && Boolean(profile.onboardedAt)
+    const connected = world.isOnline(viewer) && beninLifeReady(world, viewer)
     const cityAll = here ? inCity(world, here) : []
     const cityOthers = cityAll.filter(presence => presence.id !== viewer && !isBlockedEitherWay(world, viewer, presence.id))
 
@@ -1197,7 +1197,7 @@ export function registerDirect(world: World): void {
   })
 
   world.register('link.create', empty, ctx => {
-    if (!record(world, ctx.memberId).profile.onboardedAt) throw new WorldError('conflict', 'Finish making your character first.')
+    if (!beninLifeReady(world, ctx.memberId)) throw new WorldError('conflict', 'Finish making your Benin Life character first.')
     if (linksOf(world, ctx.memberId).length >= INVITE_LINK.open) throw new WorldError('conflict', `You have ${INVITE_LINK.open} invite links open. Take one back before making another.`)
     world.limit(`link:${ctx.memberId}`, INVITE_LINK.perDay, DAY)
     const area = areaOf(world, ctx.memberId)
@@ -1242,7 +1242,7 @@ export function registerDirect(world: World): void {
     world.limit(`link-open:${ctx.memberId}`, 30, HOUR)
     const link = linkFor(world, input.token)
     if (link.by === ctx.memberId) throw new WorldError('invalid', 'This is your own invite link.')
-    if (!record(world, ctx.memberId).profile.onboardedAt) throw new WorldError('conflict', 'Finish making your character first. Then you can say hello.')
+    if (!beninLifeReady(world, ctx.memberId)) throw new WorldError('conflict', 'Finish making your Benin Life character first. Then you can say hello.')
     let outcome: 'sent' | 'waiting' | 'friends' = 'friends'
     if (!areFriends(world, ctx.memberId, link.by)) {
       // The introduction itself belongs to the social module; it is asked for as this member, so its rules apply.
@@ -1270,7 +1270,7 @@ export function registerDirect(world: World): void {
     return { startsAt: iso(isoInstant(raw, 'startsAt')) as string, note: str(raw, 'note', { max: HANGOUT.noteMax }) }
   }, (ctx, input) => {
     const host = ctx.memberId
-    if (!record(world, host).profile.onboardedAt) throw new WorldError('conflict', 'Finish making your character first.')
+    if (!beninLifeReady(world, host)) throw new WorldError('conflict', 'Finish making your Benin Life character first.')
     const startsAt = Date.parse(input.startsAt)
     if (startsAt < ctx.now + HANGOUT.minMinutesAhead * 60_000) throw new WorldError('invalid', `Choose a time at least ${HANGOUT.minMinutesAhead} minutes from now.`)
     if (startsAt > ctx.now + HANGOUT.maxDaysAhead * DAY) throw new WorldError('invalid', `Choose a time within the next ${HANGOUT.maxDaysAhead} days.`)

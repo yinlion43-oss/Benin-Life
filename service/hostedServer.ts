@@ -59,7 +59,7 @@ const NEW_PASSWORD_MIN = 12, PASSWORD_MAX = 128
 // Pending sign-in work is bounded on its own, never by the connection limit: two players at a two-player cap can still renew.
 const PENDING_AUTH = 4096
 /** Shown to the page as `name`. The provider gives an email address and nothing else, and that is never a display name. */
-const ACCOUNT_NAME = 'Allworld member'
+const ACCOUNT_NAME = 'Benin Life member'
 function origin(value: string): void {
   const url = new URL(value)
   if (url.protocol !== 'https:' || url.origin !== value || url.username || url.password) throw new Error('Hosted origins must be exact HTTPS origins.')

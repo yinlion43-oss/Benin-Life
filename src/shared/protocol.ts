@@ -5,6 +5,7 @@ import type {
   NotificationId, PostId, ProductId, QuoteId, RoomKey, SellerId, ShiftId, VariantId,
 } from './ids.ts'
 import type { Vec2 } from './geo.ts'
+import type { BigDream, PlayerTraitId } from './beninLife.ts'
 import type {
   AvatarLook, ChatMessage, CoarseArea, AreaSource, FaceAudience, FaceScan, MemberPreferences, MemberProfile, PresenceMember, PublicMember,
   ReportReason, RoomRef, RoomSnapshot,
@@ -21,7 +22,9 @@ import type {
   Application, ApplicationStatus, Availability, Fulfilment, Listing, ListingKind, Product, ProductCategory, Quote, Seller,
 } from './market.ts'
 
-import type { LedgerEntry, TravelQuote, TravelState } from './travel.ts'
+import type { BankTransfer, LedgerEntry, TravelQuote, TravelState } from './travel.ts'
+import type { BusinessType, PlayerBusiness, BusinessDay } from './business.ts'
+import type { RentalLease, PropertySaleOffer } from './rentals.ts'
 
 import type { LifeEvent, LifeOps } from './life.ts'
 import type { ArenaEvent, ArenaOps } from './arena.ts'
@@ -50,7 +53,9 @@ export interface VariantInput {
 export interface Ops extends LifeOps, DirectOps, ComebackOps, ArenaOps, CreatorOps, VehicleOps, LiveCountsOps, HomeOps {
   // ── Member ──
   'member.me': Op<Empty, { profile: MemberProfile; blocked: PublicMember[]; reviewer: boolean }>
-  'member.saveProfile': Op<{ username: string; displayName?: string; bio: string; look: AvatarLook; expectedRevision: number; clearFace?: boolean }, { profile: MemberProfile }>
+  'member.usernameAvailable': Op<{ username: string }, { username: string; available: boolean }>
+  'member.saveProfile': Op<{ displayName: string; bio: string; look: AvatarLook; expectedRevision: number; clearFace?: boolean }, { profile: MemberProfile }>
+  'beninLife.initialize': Op<{ traits: [PlayerTraitId, PlayerTraitId]; dream: BigDream }, { profile: MemberProfile }>
   'member.savePreferences': Op<{ preferences: MemberPreferences }, { profile: MemberProfile }>
   'member.setCurrentArea': Op<{ area: CoarseArea; source: AreaSource }, { profile: MemberProfile }>
   'member.clearCurrentArea': Op<Empty, { profile: MemberProfile }>
@@ -116,6 +121,27 @@ export interface Ops extends LifeOps, DirectOps, ComebackOps, ArenaOps, CreatorO
 
   // ── Travel, documents, wallet ──
   'travel.state': Op<Empty, { state: TravelState; ledger: LedgerEntry[] }>
+  'beninBank.transfer': Op<{ username: string; amount: number; clientId: string }, { transferId: string; username: string; amount: number; balance: number }>
+  'beninBank.history': Op<Empty, { transfers: BankTransfer[] }>
+  'business.get': Op<Empty, { business: PlayerBusiness | null; balance: number }>
+  'business.create': Op<{ name: string; type: BusinessType }, { business: PlayerBusiness | null; balance: number }>
+  'business.operate': Op<Empty, { business: PlayerBusiness | null; balance: number; day: BusinessDay }>
+  'business.hire': Op<{ username: string; salary: number }, { business: PlayerBusiness | null; balance: number }>
+  'business.fire': Op<{ username: string }, { business: PlayerBusiness | null; balance: number }>
+  'business.payroll': Op<Empty, { business: PlayerBusiness | null; balance: number; paid: Array<{ username: string; amount: number }> }>
+  'rental.list': Op<{ weeklyRent: number }, { lease: RentalLease }>
+  'rental.offer': Op<{ homeId: HomeId; tenantUsername: string }, { lease: RentalLease }>
+  'rental.accept': Op<{ homeId: HomeId }, { lease: RentalLease }>
+  'rental.pay': Op<Empty, { lease: RentalLease; balance: number }>
+  'rental.end': Op<Empty, { lease: RentalLease }>
+  'rental.mine': Op<Empty, { owned: RentalLease[]; rented: RentalLease[] }>
+  'property.sellOffer': Op<{ homeId: HomeId; buyerUsername: string; price: number }, { offer: PropertySaleOffer }>
+  'property.acceptSale': Op<{ homeId: HomeId }, { homeId: HomeId; price: number; balance: number }>
+  'property.cancelSale': Op<{ homeId: HomeId }, { cancelled: true }>
+  'property.mine': Op<Empty, { selling: PropertySaleOffer[]; buying: PropertySaleOffer[] }>
+  'property.portfolio': Op<Empty, { homes: { homeId: HomeId; primary: boolean }[] }>
+  'property.upgrade': Op<{ homeId: HomeId; upgrade: string }, { homeId: HomeId; upgrade: string; installed: string[]; balance: number }>
+  'property.upgrades': Op<{ homeId: HomeId }, { homeId: HomeId; upgrades: Record<string, boolean> }>
   'travel.quote': Op<{ to: CoarseArea }, { quote: TravelQuote }>
   /** Pays the fare and starts the trip. The avatar arrives when the trip's time is up. */
   'travel.book': Op<{ to: CoarseArea }, { state: TravelState }>

@@ -195,7 +195,7 @@ function retryCharacter(): void {
             <span>Who sees it</span>
             <select class="select" :value="look.face.audience" :disabled="faceBusy" @change="emit('setFaceAudience', ($event.target as HTMLSelectElement).value as FaceAudience)">
               <option value="friends">Friends only — others see the character’s own face</option>
-              <option value="everyone">Everyone in Allworld</option>
+              <option value="everyone">Everyone in Benin Life</option>
             </select>
           </label>
           <div class="row">

@@ -16,7 +16,8 @@
 import assert from 'node:assert/strict'
 import { createWorld } from '../service/index.ts'
 import type { Connection } from '../service/kernel.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
+import { STARTING_SKILLS } from '../src/shared/beninLife.ts'
 import { configureDelivery, setTransport } from '../service/notify.ts'
 import type { SendRequest } from '../service/notify.ts'
 import { manifestFragment, unsubscribeByToken } from '../service/comeback.ts'
@@ -49,6 +50,10 @@ const breathe = (): void => { now += 6000 }
 const member = (key: string, name: string, reviewer = false): MemberId => {
   const id = `m_cb_${key}` as MemberId
   ensureMember(world, id, name, { reviewer })
+  const profile = record(world, id).profile
+  profile.username = `@${name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)}`
+  profile.displayName = profile.username
+  profile.beninLife = { traits: ['hustler', 'foodie'], dream: 'Everybody\'s Padi', lifeStatus: 'Ajabutter', skills: { ...STARTING_SKILLS }, perks: [] }
   return id
 }
 const ada = member('ada', 'Ada'), bayo = member('bayo', 'Bayo'), chidi = member('chidi', 'Chidi'), dara = member('dara', 'Dara')
@@ -160,9 +165,9 @@ const tayoTitle = workShift(tayo)
 expectType('promotion', `You were promoted to ${tayoTitle}`, 'a finished shift that raised the level (work)')
 leave(tayo)
 message(ada, tayo)
-expectType('message', 'Ada sent you a message', 'a direct message (social)')
+expectType('message', '@ada sent you a message', 'a direct message (social)')
 world.call(chidi, 'wave.send', { to: tayo })
-expectType('person', 'Chidi waved at you', 'a wave (social)')
+expectType('person', '@chidi waved at you', 'a wave (social)')
 world.call(chidi, 'meetup.propose', {
   venue: { placeId: 'p555' as never, districtId: ibadan.arrivalDistrict, name: 'Bodija Market', category: 'shop', branch: 'main gate' },
   startsAt: new Date(lagos(3, 18)).toISOString(), timezone: 'Africa/Lagos', note: '', invite: [tayo],

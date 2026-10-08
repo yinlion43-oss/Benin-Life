@@ -53,7 +53,7 @@ export const starterLine = (kind: FeedbackKind, topic: FeedbackTopic | null): st
  */
 export type FeedbackContext = 'arrival' | 'street' | 'indoors' | 'menu'
 export const SIGN: Record<FeedbackContext, { title: string; line: string }> = {
-  arrival: { title: 'Allworld noticeboard', line: 'Help shape Allworld' },
+  arrival: { title: 'Benin Life noticeboard', line: 'Help shape Benin Life' },
   street: { title: 'Noticeboard', line: 'Seen something to improve out here?' },
   indoors: { title: 'Suggestion box', line: 'Drop in an idea, or tell us what went wrong' },
   menu: { title: FEEDBACK_TITLE, line: 'Suggest an idea or report a problem' },

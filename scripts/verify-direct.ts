@@ -423,7 +423,7 @@ assert.deepEqual([tripNeeded.way?.reach, tripNeeded.way?.destination, tripNeeded
 assert.match(tripNeeded.way!.text, /Book a trip there from Travel/)
 assertWordsOnly(tripNeeded, 'a cross-city answer')
 assert.equal(standing(d), dBefore, 'and nobody was moved')
-assert.equal(note(a, 'social.join-accepted').at(0)!.title, 'Dara wants to join you, and needs a trip first')
+assert.equal(note(a, 'social.join-accepted').at(0)!.title, '@dara wants to join you, and needs a trip first')
 assert.equal(code(() => world.call(d, 'room.enter', { ref: market, pos: { x: 0, z: 0 }, heading: 0 })), 'forbidden', 'the travel rules still decide who may step in')
 // Home: a home is a building in a street. Private is refused, a home that stands in no street has no front door to be sent to,
 // and a placed one is gone to the way the service says: walk to its door, then go in, or book a trip first. An answer moves nobody.

@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   package:
-    if: github.repository == 'kromate/allworld'
+    if: github.repository == 'yinlion43-oss/Benin-Life'
     name: Build and gate the package
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -99,7 +99,7 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Workers
     needs: package
-    if: github.repository == 'kromate/allworld' && inputs.deploy && github.ref == 'refs/heads/main'
+    if: github.repository == 'yinlion43-oss/Benin-Life' && inputs.deploy && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: production

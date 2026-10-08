@@ -203,6 +203,14 @@ check('3 street guard: far district refused, local district and its venues allow
   // A synthetic owner in Yaba, Lagos: a placed home, and the authoritative walk from the public arrival to its front door.
   const owner = id('owner')
   ensureMember(world, owner, 'Home owner')
+  const ownerProfile = record(world, owner)
+  if (!ownerProfile.profile.username) {
+    world.call(owner, 'member.saveProfile', { displayName: 'travel_owner', bio: '', clearFace: false, look: ownerProfile.profile.look, expectedRevision: ownerProfile.profile.revision })
+  }
+  if (!record(world, owner).profile.beninLife) {
+    world.call(owner, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+  }
+  if (!record(world, owner).profile.onboardedAt) world.call(owner, 'member.completeOnboarding', {})
   world.connect(owner, () => {}, () => {})
   arriveAt(owner, lagos)
   const arrival = enter(owner, lagos)

@@ -303,6 +303,9 @@ export function createAssetStore(options: AssetStoreOptions): AssetStore {
         job.checking()
         const content = await checked(stored, entry)
         if (!content) throw new AssetError('changed', path)
+        // A file this page has just read is in use, so it is not eligible for eviction during the
+        // same budget check that may be triggered while the store is being updated.
+        used.add(entry.sha256)
         keep(path, entry, stored)
         return content
       } catch (error) {

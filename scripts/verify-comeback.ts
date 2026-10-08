@@ -165,7 +165,7 @@ const tayoTitle = workShift(tayo)
 expectType('promotion', `You were promoted to ${tayoTitle}`, 'a finished shift that raised the level (work)')
 leave(tayo)
 message(ada, tayo)
-expectType('message', 'Ada sent you a message', 'a direct message (social)')
+expectType('message', '@ada sent you a message', 'a direct message (social)')
 world.call(chidi, 'wave.send', { to: tayo })
 expectType('person', 'Chidi waved at you', 'a wave (social)')
 world.call(chidi, 'meetup.propose', {

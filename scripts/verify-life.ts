@@ -579,9 +579,9 @@ check('13 a proper meal with someone else in the room lifts the bonus for two ho
   assert.deepEqual([shared.state.effects.shiftBonusPercent, shared.state.effects.shiftBonusCap], [LIFE.company.percent, LIFE.company.cap])
   assert.equal(eat(B, 'ng.zobo', kitchen).receipt!.shared, false, 'a drink is not a shared meal')
   // A was in the room and not eating: A hears about it once, and can join.
-  assert.deepEqual(invites(A).slice(earlier).map(invite => [invite.from.name, invite.dish.name]), [['Member B', 'Amala, ewedu and gbegiri']])
+  assert.deepEqual(invites(A).slice(earlier).map(invite => [invite.from.name, invite.dish.name]), [['@member_b', 'Amala, ewedu and gbegiri']])
   assert.deepEqual(shared.receipt!.with, [], 'nobody was eating yet')
-  assert.equal(menu(A, kitchen).menu!.eating.join(), 'Member B', 'the menu says who is eating here')
+  assert.equal(menu(A, kitchen).menu!.eating.join(), '@member_b', 'the menu says who is eating here')
   const before = balance(B)
   const pay = workShift(B)
   assert.equal(balance(B), before + pay + Math.min(LIFE.company.cap, Math.round(pay * LIFE.company.percent / 100)), 'the lifted bonus is what gets paid')
@@ -589,9 +589,9 @@ check('13 a proper meal with someone else in the room lifts the bonus for two ho
   const coins = [balance(A), balance(B)]
   const told = pushed(B).length, tables = life(A).together
   const joined = eat(A, 'ng.jollof', kitchen)
-  assert.deepEqual(joined.receipt!.with, ['Member B'])
+  assert.deepEqual(joined.receipt!.with, ['@member_b'])
   assert.equal(joined.receipt!.shared, true)
-  assert.deepEqual(joined.state.meals[0]!.with, ['Member B'])
+  assert.deepEqual(joined.state.meals[0]!.with, ['@member_b'])
   assert.equal(joined.state.together, tables + 1)
   const news = pushed(B).slice(told).find(event => event.reason === 'table')!
   assert.equal(news.note, 'Member A sat down with Jollof rice and chicken. You are eating together.')
@@ -757,7 +757,7 @@ check('18 the come-back track can read a summary without changing anything', () 
   assert.equal(summary.memberId, A)
   assert.equal(summary.hunger, hunger)
   assert.equal(summary.lastMeal!.name, 'Jollof rice and chicken')
-  assert.deepEqual(summary.lastMeal!.with, ['Member B'])
+  assert.deepEqual(summary.lastMeal!.with, ['@member_b'])
   const starving = needsSummary(world, G)!
   assert.deepEqual([starving.hungry, starving.hungryAt, starving.hungerLevel], [true, null, 'critical'])
   world.flush()

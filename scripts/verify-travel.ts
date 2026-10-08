@@ -147,7 +147,7 @@ check('1 first arrival sets location and home country and grants 150 naira once'
   const after = travel(A)
   assert.deepEqual(after.location, ibadan)
   assert.equal(after.homeCountry, 'NG')
-  assert.equal(after.balance, TRAVEL.startingnaira)
+  assert.equal(after.balance, TRAVEL.startingNaira)
   assert.equal(after.balance, 150)
   assert.equal(after.passport.status, 'none')
   const entries = ledger(A)

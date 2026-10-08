@@ -1,5 +1,6 @@
 # Checks for pull requests and for main. Runs the pull request's own code, so it has no secrets, no
 # environment, read-only permissions and no pull_request_target. It never deploys.
+# Benin-Life: immutable action pins; exact Node 22.18.0.
 name: CI
 
 on:

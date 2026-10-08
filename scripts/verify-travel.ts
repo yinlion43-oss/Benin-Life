@@ -3,6 +3,7 @@
 // Prints one PASS line per check and exits non-zero on the first failure.
 import assert from 'node:assert/strict'
 import type { MemberId } from '../src/shared/ids.ts'
+import { BIG_DREAMS, PLAYER_TRAITS } from '../src/shared/beninLife.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { CoarseArea, ErrorCode, RoomRef } from '../src/shared/model.ts'
 import type { ServerEvent } from '../src/shared/protocol.ts'
@@ -12,7 +13,7 @@ import type { TravelState } from '../src/shared/travel.ts'
 import { areaFromPlace } from '../src/geo/areas.ts'
 import type { Persistence, World } from '../service/kernel.ts'
 import { createWorld } from '../service/index.ts'
-import { ensureMember } from '../service/members.ts'
+import { ensureMember, record } from '../service/members.ts'
 import { roomOf } from '../service/rooms.ts'
 import { recordEarning } from '../service/travel.ts'
 import { careerPoints, spendPoints } from '../service/work.ts'
@@ -45,6 +46,15 @@ function makeWorld(): World {
   const made = createWorld({ now: () => now, persistence })
   for (const name of names) {
     ensureMember(made, id(name), `Member ${name.toUpperCase()}`)
+    const member = record(made, id(name))
+    if (!member.profile.username) {
+      made.call(id(name), 'member.saveProfile', { displayName: `travel_${name}`, bio: '', clearFace: false, look: member.profile.look, expectedRevision: member.profile.revision })
+    }
+    const ready = record(made, id(name))
+    if (!ready.profile.beninLife) {
+      made.call(id(name), 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+    }
+    if (!record(made, id(name)).profile.onboardedAt) made.call(id(name), 'member.completeOnboarding', {})
     made.connect(id(name), frame => { if (frame.t === 'event') (events[id(name)] ??= []).push(frame.event) }, () => {})
   }
   return made

@@ -647,7 +647,7 @@ if (!newcomerProfile.profile.username) world.call(newcomer, 'member.saveProfile'
 if (!record(world, newcomer).profile.beninLife) world.call(newcomer, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
 world.call(newcomer, 'member.completeOnboarding', {})
 const joinedNote = note(e, 'social.invite-joined')
-assert.deepEqual([joinedNote.length, joinedNote[0]!.title, joinedNote[0]!.category, joinedNote[0]!.actor?.id], [1, 'Nneka came through your invite link', 'social', newcomer])
+assert.deepEqual([joinedNote.length, joinedNote[0]!.title, joinedNote[0]!.category, joinedNote[0]!.actor?.id], [1, '@nneka came through your invite link', 'social', newcomer])
 world.call(newcomer, 'member.me', {})
 assert.equal(note(e, 'social.invite-joined').length, 1, 'told once')
 assert.deepEqual(world.call(e, 'link.mine', {}).links[0]!.joined.map(member => member.id), [newcomer], 'the maker sees who came through it')

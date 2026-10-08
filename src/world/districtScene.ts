@@ -8,6 +8,7 @@ import type { Vec2 } from '../shared/geo.ts'
 import type { Building, District, Ground, GroundKind, Poi, Polygon, Road, RoadKind } from '../geo/district.ts'
 import type { StreetNavigator } from './nav.ts'
 import { createStreetDetailStream } from './streetDetail.ts'
+import { createBillboardSystem } from './billboards.ts'
 import type { StreetDetailStats } from './streetDetail.ts'
 import { resolveFacadeStyle } from './facadeStyles.ts'
 import type { DistrictSceneContext, FacadeStyle } from './facadeStyles.ts'
@@ -669,6 +670,9 @@ export function buildDistrictScene(
   // Bounded eye-level detail follows the player while mapped shells persist.
   const streetDetail = createStreetDetailStream(district, navigator, focus, quality, category => categoryStyle(category).color, facadeStyle)
   root.add(streetDetail.group)
+  // Roadside advertising: bounded, quality-aware billboards that follow the player.
+  const billboards = createBillboardSystem(district, focus, quality)
+  root.add(billboards.group)
 
   // Street names, laid flat along the street.
   let streetLabels = 0
@@ -800,6 +804,7 @@ export function buildDistrictScene(
     setNight(amount) {
       const night = THREE.MathUtils.clamp(amount, 0, 1)
       streetDetail.setNight(night)
+      billboards.setNight(night)
       fixtureScene.material.emissiveIntensity = 0.08 + night * 0.55
       waterMaterial.roughness = THREE.MathUtils.lerp(0.3, 0.16, night)
     },
@@ -813,6 +818,7 @@ export function buildDistrictScene(
         surfaceTier = nextSurfaceTier
       }
       streetDetail.setQuality(nextQuality)
+      billboards.setQuality(nextQuality)
       refreshVenues(currentPosition, true)
       applyDrawDistance()
       applyLabelDistance()
@@ -832,6 +838,7 @@ export function buildDistrictScene(
     },
     updatePosition(position) {
       streetDetail.update(position)
+      billboards.update(position)
       refreshVenues(position)
       stats.triangles = fixedTriangles + streetDetail.stats.triangles
       stats.trees = streetDetail.stats.trees
@@ -851,6 +858,7 @@ export function buildDistrictScene(
     streaming: streetDetail.stats,
     dispose() {
       streetDetail.dispose()
+      billboards.dispose()
       venues.forEach(disposeVenue)
       venues.length = 0
       root.traverse(child => {

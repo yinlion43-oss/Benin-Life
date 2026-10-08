@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import type { DistrictId, HomeId, MemberId } from '../src/shared/ids.ts'
+import { BIG_DREAMS, PLAYER_TRAITS } from '../src/shared/beninLife.ts'
 import { distance, parseDistrictId } from '../src/shared/geo.ts'
 import type { Vec2 } from '../src/shared/geo.ts'
 import { HOME_PHYSICAL } from '../src/shared/homes.ts'
@@ -22,7 +23,7 @@ import type { NavigationFootprint } from '../src/world/nav.ts'
 import type { Connection, Persistence, World } from '../service/kernel.ts'
 import { createWorld } from '../service/index.ts'
 import { lifeEffects, needsSummary } from '../service/life.ts'
-import { addFriendship, ensureMember } from '../service/members.ts'
+import { addFriendship, ensureMember, record } from '../service/members.ts'
 import { placeOf } from '../service/rooms.ts'
 import { careerPoints, spendPoints } from '../service/work.ts'
 
@@ -49,6 +50,10 @@ function makeWorld(connected = true): World {
   const made = createWorld({ now: () => now, persistence })
   for (const name of names) {
     ensureMember(made, id(name), `Member ${name.toUpperCase()}`)
+    const profile = record(made, id(name))
+    if (!profile.profile.username) made.call(id(name), 'member.saveProfile', { displayName: `life_${name}`, bio: '', clearFace: false, look: profile.profile.look, expectedRevision: profile.profile.revision })
+    if (!record(made, id(name)).profile.beninLife) made.call(id(name), 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
+    if (!record(made, id(name)).profile.onboardedAt) made.call(id(name), 'member.completeOnboarding', {})
     if (connected) connect(made, id(name))
   }
   return made

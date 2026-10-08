@@ -33,7 +33,7 @@ export const NAV: readonly NavItem[] = [
   { to: '/phone', label: 'Phone', glyph: 'phone', key: '' },
   { to: '/settings', label: 'Settings', glyph: 'sliders', key: ',', menuOnly: true },
   { to: '/feedback', label: 'Feedback', glyph: 'note', key: '', menuOnly: true },
-
+]
 
 /**
  * The section a path belongs to. A route may name it (`meta.nav`) when its own path does not say:

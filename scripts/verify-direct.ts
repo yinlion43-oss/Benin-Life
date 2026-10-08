@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { createWorld } from '../service/index.ts'
 import { ensureMember, record } from '../service/members.ts'
-import { STARTING_SKILLS } from '../src/shared/beninLife.ts'
+import { BIG_DREAMS, PLAYER_TRAITS, STARTING_SKILLS } from '../src/shared/beninLife.ts'
 import { roomOf } from '../service/rooms.ts'
 import { setPresenceCacheMs } from '../service/direct.ts'
 import { areaFromPlace } from '../src/geo/areas.ts'
@@ -340,6 +340,9 @@ for (let index = 0; index < 7; index++) {
   const memberId = id(`crowd${index}`)
   crowd.push(memberId)
   ensureMember(world, memberId, `Crowd ${index}`)
+  const crowdProfile = record(world, memberId)
+  if (!crowdProfile.profile.username) world.call(memberId, 'member.saveProfile', { displayName: `crowd_${index}`, bio: '', clearFace: false, look: crowdProfile.profile.look, expectedRevision: crowdProfile.profile.revision })
+  if (!record(world, memberId).profile.beninLife) world.call(memberId, 'beninLife.initialize', { traits: [PLAYER_TRAITS[0].id, PLAYER_TRAITS[1].id], dream: BIG_DREAMS[0] })
   connect(memberId)
   world.call(memberId, 'member.setCurrentArea', { area: ibadan, source: 'manual' })
   world.call(memberId, 'member.completeOnboarding', {})

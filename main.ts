@@ -3,7 +3,7 @@
 // `mount()`, after it has run. A static import here would be evaluated first, and a bundler may
 // hoist it into a shared chunk that runs before this file, so the rest stays dynamic on purpose.
 import './src/platform/transferFragment.ts'
-import type { RouteRecordRaw } from 'vue-router'
+import type { RouteRecordRaw, Router, RouteLocation, NavigationGuard } from 'vue-router'
 
 // Real path routes. The world itself is always mounted; every other route opens a panel beside it.
 // `nav` names the section a route sits under when its path does not (src/ui/shell.ts). `half` is a
@@ -55,7 +55,7 @@ async function mount(): Promise<void> {
   ])
   const downloadEntry = resolveDownloadEntry(location.href, import.meta.url, import.meta.env.BASE_URL)
   const router = createRouter({ history: downloadEntry ? createWebHistory(downloadEntry.basePath) : createWebHistory(), routes })
-  router.afterEach(to => { document.title = brandTitle(typeof to.meta.title === 'string' && to.meta.title ? to.meta.title : undefined) })
+  router.afterEach((to: RouteLocation) => { document.title = brandTitle(typeof to.meta.title === 'string' && to.meta.title ? to.meta.title : undefined) })
   if (downloadEntry) {
     const { default: PublicDownloadsEntry } = await import('./src/features/settings/PublicDownloadsEntry.vue')
     createApp(PublicDownloadsEntry, { entry: downloadEntry }).use(router).mount('#app')

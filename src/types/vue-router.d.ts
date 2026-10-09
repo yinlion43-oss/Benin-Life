@@ -87,4 +87,21 @@ declare module 'vue-router' {
   export interface RouteRecordMeta {
     [key: string]: any;
   }
+  
+  // Add the missing exports
+  export function createRouter(options: any): Router;
+  export function createWebHistory(base?: string): any;
+  export function createWebHashHistory(base?: string): any;
+  export function createMemoryHistory(base?: string): any;
+  export function useRouter(): Router;
+  export function useRoute(): RouteLocationNormalized;
+  export function onBeforeRouteLeave(guard: NavigationGuard): void;
+  export function onBeforeRouteUpdate(guard: NavigationGuard): void;
+  export const RouterLink: any;
+  export const RouterView: any;
+  export const START_LOCATION: RouteLocationNormalized;
+  export const NavigationFailureType: any;
+  export function isNavigationFailure(error: any, type?: any): boolean;
+  export const NavigationType: any;
+  export const NavigationDirection: any;
 }

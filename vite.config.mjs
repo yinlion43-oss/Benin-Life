@@ -97,6 +97,6 @@ function freshComponentTypes() {
 export default defineConfig({
   plugins: [publicPackPayloads(), previewBuildInfo(), freshComponentTypes(), vue(), localWorldService()],
   ...(process.env.NW_CACHE_DIR ? { cacheDir: process.env.NW_CACHE_DIR } : {}),
-  server: { host: '127.0.0.1', hmr: false, watch: { ignored: ['**/.goalmatic/local/**'] } },
+  server: { watch: { ignored: ['**/.goalmatic/local/**'] } },
   build: { chunkSizeWarningLimit: 900 },
 })

@@ -11,8 +11,8 @@ assert.match(main, /path: '\/map', component: \(\) => import\('\.\/src\/features
 assert.match(main, /path: '\/wallet', redirect: '\/phone\/bank'/, 'wallet must lead to the service-backed bank instead of a local-only balance')
 assert.match(lifePage, /from '\.\.\/\.\.\/state\/world\.ts'/, 'City Life must reflect the actual game world')
 assert.doesNotMatch(lifePage, /localStorage|workDay\(|newSave\(/, 'City Life must not mint local-only money or a disconnected save')
-assert.match(lifePage, /to="\/work"/, 'City Life links into playable shifts')
-assert.match(lifePage, /to="\/map"/, 'City Life links into the connected map')
+assert.match(lifePage, /to: '\/work'/, 'City Life links into playable shifts')
+assert.match(lifePage, /to: '\/map'/, 'City Life links into the connected map')
 assert.match(phonePage, /route: '\/life'/, 'the phone Activities app must open City Life')
 assert.match(streetLife, /low: 2, medium: 5, high: 7/, 'street activity grows with the graphics quality tier')
 

@@ -1,107 +1,21 @@
 // Type declaration for vue-router module
-// This is needed because the package is imported dynamically but TypeScript needs type information
+// Provides needed type exports while relying on the real vue-router package types
 
-declare module 'vue-router' {
-  export interface RouteRecordRaw {
-    path: string;
-    name?: string;
-    component?: any;
-    redirect?: string | { path: string; name?: string; params?: any };
-    props?: boolean | ((route: RouteLocationNormalized) => any);
-    meta?: any;
-    alias?: string | Array<string>;
-    beforeEnter?: (to: RouteLocation, from: RouteLocation, next: Function) => void;
-    children?: Array<RouteRecordRaw>;
-    caseSensitive?: boolean;
-    exact?: boolean;
-    hash?: boolean;
-    pathToRegexpOptions?: object;
-  }
+// Export the needed functions and types at the module level
+export function createRouter(options: any): any;
+export function createWebHistory(base?: string): any;
+export function createWebHashHistory(base?: string): any;
+export function createMemoryHistory(base?: string): any;
+export function useRouter(): any;
+export function useRoute(): any;
+export const RouterLink: any;
+export const RouterView: any;
+export const START_LOCATION: any;
+export const NavigationFailureType: any;
+export function isNavigationFailure(error: any, type?: any): boolean;
+export const NavigationType: any;
+export const NavigationDirection: any;
 
-  export interface RouteLocationRaw {
-      path?: string;
-      params?: any;
-      hash?: string;
-      query?: any;
-      state?: any;
-    }
-  
-    export interface RouteLocation extends RouteLocationRaw {
-      readonly path: string;
-      readonly params: { [key: string]: string };
-      readonly hash: string;
-      readonly query: { [key: string]: string };
-      readonly state: any;
-    }
-
-  export interface RouteLocationNormalized {
-    path: string;
-    params: { [key: string]: string };
-    hash: string;
-    query: { [key: string]: string };
-    state: any;
-  }
-
-  export class Router {
-    mode: 'history' | 'hash' | 'abstract';
-    base: string;
-    routes: RouteRecordRaw[];
-    currentRoute: RouteLocationNormalized;
-    
-    push(location: string | RouteLocation, onComplete?: () => void, onAbort?: () => void): Promise<void>;
-    replace(location: string | RouteLocation, onComplete?: () => void, onAbort?: () => void): Promise<void>;
-    go(n: number): void;
-    back(): void;
-    forward(): void;
-  }
-
-  export class Route {
-    readonly path: string;
-    readonly name: string | null;
-    readonly hash: string;
-    readonly query: { [key: string]: string };
-    readonly params: { [key: string]: string };
-    readonly fullPath: string;
-    readonly matched: RouteRecordRaw[];
-    readonly redirectedFrom: Route | null;
-    readonly key: string;
-  }
-
-  export interface NavigationGuard {
-    (to: RouteLocation, from: RouteLocation, next: Function): void;
-    onlyInCurrentNavigation?: boolean;
-  }
-
-  export interface RouteRecordName {
-    name: string;
-  }
-
-  export interface RouteRecordPath {
-    path: string;
-  }
-
-  export interface RouteRecordComponent {
-    component: any;
-  }
-
-  export interface RouteRecordMeta {
-    [key: string]: any;
-  }
-  
-  // Add the missing exports
-  export function createRouter(options: any): Router;
-  export function createWebHistory(base?: string): any;
-  export function createWebHashHistory(base?: string): any;
-  export function createMemoryHistory(base?: string): any;
-  export function useRouter(): Router;
-  export function useRoute(): RouteLocationNormalized;
-  export function onBeforeRouteLeave(guard: NavigationGuard): void;
-  export function onBeforeRouteUpdate(guard: NavigationGuard): void;
-  export const RouterLink: any;
-  export const RouterView: any;
-  export const START_LOCATION: RouteLocationNormalized;
-  export const NavigationFailureType: any;
-  export function isNavigationFailure(error: any, type?: any): boolean;
-  export const NavigationType: any;
-  export const NavigationDirection: any;
-}
+// No local declare module 'vue-router' - the real package types from
+// "dist/vue-router.d.mts" will be used instead, which properly
+// include afterEach, meta, and all other vue-router v4 features.

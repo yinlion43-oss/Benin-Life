@@ -31,7 +31,7 @@ declare module 'three/examples/jsm/loaders/GLTFLoader.js' {
 declare module 'three/examples/jsm/utils/SkeletonUtils.js' {
   import * as THREE from 'three';
   
-  export function clone(object: THREE.SkinnedMesh): THREE.SkinnedMesh;
+  export function clone(object: THREE.Object3D): THREE.Object3D;
   export function retarget(target: THREE.SkinnedMesh, source: THREE.SkinnedMesh, options?: { boneMap?: Map<string, string>; preserveMatrix?: boolean }): THREE.SkinnedMesh;
 }
 
@@ -39,7 +39,7 @@ declare module 'three/examples/jsm/utils/BufferGeometryUtils.js' {
   import * as THREE from 'three';
   
   export function mergeGeometries(geometries: THREE.BufferGeometry[], useGroups?: boolean): THREE.BufferGeometry;
-  export function mergeVertices(geometry: THREE.BufferGeometry): THREE.BufferGeometry;
+  export function mergeVertices(geometry: THREE.BufferGeometry, tolerance?: number): THREE.BufferGeometry;
   export function computeMorphedAttributes(geometry: THREE.BufferGeometry, morphTargetsRelative: boolean): { positionAttribute: THREE.BufferAttribute; normalAttribute: THREE.BufferAttribute; morphAttributes: any };
   export function toTrianglesDrawMode(geometry: THREE.BufferGeometry, drawMode: number): THREE.BufferGeometry;
   export function estimateBytesUsed(geometry: THREE.BufferGeometry): number;
@@ -52,7 +52,7 @@ declare module 'three/examples/jsm/utils/BufferGeometryUtils.js' {
 declare module 'three/examples/jsm/environments/RoomEnvironment.js' {
   import * as THREE from 'three';
   
-  export class RoomEnvironment {
+  export class RoomEnvironment extends THREE.Scene {
     constructor();
     dispose(): void;
   }

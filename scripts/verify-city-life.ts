@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { regionKitFor } from '../src/world/regions/kits.ts'
+
+const main = readFileSync(new URL('../main.ts', import.meta.url), 'utf8')
+const lifePage = readFileSync(new URL('../src/features/life/BeninLifePage.vue', import.meta.url), 'utf8')
+const phonePage = readFileSync(new URL('../src/features/phone/PhonePage.vue', import.meta.url), 'utf8')
+const streetLife = readFileSync(new URL('../src/world/regions/streetLife.ts', import.meta.url), 'utf8')
+
+assert.ok(main.includes("path: '/map'") && main.includes('MapPage.vue') && !main.includes('BeninCityOverview.vue'), 'the map route must use the connected live map')
+assert.ok(main.includes("{ path: '/wallet', redirect: '/phone/bank' }"), 'wallet must lead to the service-backed bank instead of a local-only balance')
+assert.ok(lifePage.includes("from '../../state/world.ts'"), 'City Life must reflect the actual game world')
+assert.doesNotMatch(lifePage, /localStorage|workDay\(|newSave\(/, 'City Life must not mint local-only money or a disconnected save')
+assert.ok(lifePage.includes("to: '/work'"), 'City Life links into playable shifts')
+assert.ok(lifePage.includes("to: '/map'"), 'City Life links into the connected map')
+assert.ok(phonePage.includes("route: '/life'"), 'the phone Activities app must open City Life')
+assert.ok(streetLife.includes("low: 2, medium: 5, high: 7"), 'street activity grows with the graphics quality tier')
+
+const benin = regionKitFor('NG', 'Benin City')
+assert.equal(benin?.id, 'benin-city', 'Benin City gets its own regional dressing')
+assert.equal(benin?.profile, 'market', 'Benin City uses the Nigerian market-street profile')
+for (const area of ['Benin City', 'Ring Road', 'GRA / Etete', 'Ogbe', 'New Benin', 'Ekenwan', 'Ikpoba Hill', 'Ugbowo', 'Uselu', 'Ekosodin', 'Ugbor', 'Aduwawa', 'Ramat Park', 'Igun Street', 'Sapele Road', 'Airport Road']) {
+  assert.equal(regionKitFor('NG', area)?.id, 'benin-city', `${area} receives Benin City street dressing`)
+}
+assert.ok((benin?.density ?? 0) > (regionKitFor('NG', 'Unknown Nigerian Area')?.density ?? 1), 'the Benin City kit adds more street detail than the generic fallback')
+assert.ok(['danfo', 'keke', 'okada', 'stall-red', 'stall-green', 'pos-kiosk'].every(model => benin?.models.includes(model as never)), 'the city kit keeps local transport and roadside commerce assets')
+
+console.log('PASS connected City Life routes, real-world state, and Benin City street kit')

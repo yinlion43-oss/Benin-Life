@@ -17,6 +17,7 @@ distributed asset. Source authoring archives are outside the runnable export.
 | MediaPipe Face Landmarker (model + WASM) | Reading a face from a photo, on the device | https://developers.google.com/mediapipe · model at `storage.googleapis.com/mediapipe-models/face_landmarker/…` | Apache-2.0 | npm `@mediapipe/tasks-vision`, pinned at exactly `0.10.35`: later versions report usage metrics to the publisher (see `src/features/avatar/README.md`); model fetched at runtime |
 | three.js | 3D rendering | https://threejs.org | MIT | npm `three` |
 | MapLibre GL | 2D world map | https://maplibre.org | BSD-3-Clause | npm `maplibre-gl` |
+| OSIRIS map camera controls (adapted) | Smooth zoom/pan controller for the existing street map; no OSINT feeds or surveillance features copied | https://github.com/simplifaisoul/osiris/blob/master/src/lib/map-camera-controls.ts | MIT; retain copyright and permission notice | `src/features/map/camera-controls.ts`; full required text in `src/features/map/OSIRIS-MIT-NOTICE.md` |
 | tz-lookup | Timezone of a place | https://github.com/darkskyapp/tz-lookup | CC0 1.0 | npm `tz-lookup` |
 | Vue, Vue Router, Vite | App framework and build | https://vuejs.org | MIT | npm |
 | OpenStreetMap data | Streets, building outlines, water, parks, places | https://www.openstreetmap.org/copyright | ODbL 1.0 — attribution shown in the world and travel views | Fetched live as vector tiles |

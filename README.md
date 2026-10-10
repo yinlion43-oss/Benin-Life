@@ -22,11 +22,10 @@ play. The inherited Apache-2.0 license and third-party notices remain in [`LICEN
   two traits and a Big Dream. The service assigns life status, starting skills and a randomized
   perk; incomplete profiles are excluded from public-member operations.
 - The Character settings screen now shows that saved Benin Life story and its starting skill levels.
-- The Phone menu now opens a Benin Life app hub. Existing message, contact, job, home, map, social
-  and settings areas are linked. BeninBank sends game coins between completed characters by
-  `@username`, stores paired transaction history, and safely recognizes retries; there is no
-  request-money feature. Scheduled payments, businesses, football, daily activities and advertising
-  are still in development.
+- The map route uses the connected MapLibre city map and existing world state: player position, mapped places, walking previews and vehicle destination selection. The map includes a tilted 3D-style camera, a 2D/3D toggle, responsive zoom/pan controls and optional building extrusions when supported by the active style.
+- City Life is a connected activity hub for the existing work shifts, jobs and tasks, home editor, food/rest loop, travel, social, businesses, game hall and phone. It no longer creates a separate local-only wallet or fake career progression; `/wallet` routes to the service-backed BeninBank.
+- Benin City has a dedicated Nigerian street-dressing profile. It uses the existing region assets for danfo, keke, okada, food stands, stalls and POS kiosks, with more street actors on medium/high graphics tiers and a conservative low tier for phones.
+- The Phone menu opens the Benin Life app hub. BeninBank sends game coins between completed characters by `@username`, stores paired transaction history, and safely recognizes retries; football career and advertising campaigns remain planned systems.
 - The authored character options, city places, phone app list, transport options and advertising
   inventory are centralized in [`src/shared/beninLife.ts`](src/shared/beninLife.ts). Several of
   those are design data and are not yet connected to playable interfaces.

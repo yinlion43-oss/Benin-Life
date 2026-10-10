@@ -11,16 +11,16 @@ const apps: PhoneApp[] = [
   { name: 'Businesses', icon: '🏪', description: 'Start and run a small game business.', route: '/phone/businesses' },
   { name: 'Property', icon: '🏠', description: 'Visit and arrange your home.', route: '/home' },
   { name: 'Football', icon: '⚽', description: 'Crescent Sports Center and clubs are in development.' },
-  { name: 'Map', icon: '🗺️', description: 'Open the city map.', route: '/map' },
+  { name: 'Map', icon: '🗺️', description: 'Open the live city map, choose a destination and plan a walk.', route: '/map' },
   { name: 'Social', icon: '🎉', description: 'Open communities and meetups.', route: '/communities' },
-  { name: 'Activities', icon: '🎭', description: 'Benin City daily activities are in development.' },
+  { name: 'Activities', icon: '🎭', description: 'Your daily loop: work, food, home, friends and city exploration.', route: '/life' },
   { name: 'Advertising', icon: '📣', description: 'Billboard campaigns are in development.' },
   { name: 'Settings', icon: '⚙️', description: 'Manage your character and preferences.', route: '/settings' },
 ]
 </script>
 
 <template>
-  <PanelPage title="Phone" subtitle="Your Benin Life apps" wide>
+  <PanelPage title="Phone" subtitle="Your apps for life in the city" wide>
     <p class="notice sky"><span aria-hidden="true">ℹ️</span><span>BeninBank will use game currency only. It will not connect to a real bank or handle real money.</span></p>
     <nav class="phone-apps" aria-label="Phone apps">
       <template v-for="app in apps" :key="app.name">

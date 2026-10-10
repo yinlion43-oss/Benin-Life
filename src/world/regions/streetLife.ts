@@ -107,7 +107,8 @@ export interface StreetLife {
   diagnostics: StreetLifeDiagnostics
 }
 
-const QUALITY_CAP = { low: 2, medium: 4, high: 5 } satisfies Record<StreetLifeInput['quality'], number>
+// Keep the low tier light for phones; richer devices can show more market and roadside activity.
+const QUALITY_CAP = { low: 2, medium: 5, high: 7 } satisfies Record<StreetLifeInput['quality'], number>
 const LOAD_RADIUS = 35
 const RESELECT_DISTANCE = 15
 const ARRIVAL_VISIBLE_NEAR = 12

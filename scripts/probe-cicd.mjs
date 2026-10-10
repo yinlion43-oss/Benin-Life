@@ -96,7 +96,7 @@ try {
     ['lock-integrity-removed', dir => { const p = join(dir, '.github/wrangler/package-lock.json'), l = JSON.parse(readFileSync(p)); delete l.packages['node_modules/wrangler'].integrity; writeFileSync(p, JSON.stringify(l)) }, /integrity hash/],
     ['tool-version-range', dir => { const p = join(dir, '.github/wrangler/package.json'), t = JSON.parse(readFileSync(p)); t.dependencies.wrangler = '^4.147.0'; writeFileSync(p, JSON.stringify(t)) }, /exact version/],
     ['tool-extra-dependency', dir => { const p = join(dir, '.github/wrangler/package.json'), t = JSON.parse(readFileSync(p)); t.dependencies.extra = '1.0.0'; writeFileSync(p, JSON.stringify(t)) }, /exactly one dependency/],
-    ['gitignore-drops-handover', dir => { const p = join(dir, '.gitignore'); writeFileSync(p, readFileSync(p, 'utf8').replace('docs/handover/\n', '')) }, /no longer lists docs\/handover/],
+    ['gitignore-drops-handover', dir => { const p = join(dir, '.gitignore'); writeFileSync(p, readFileSync(p, 'utf8').replace(/docs\/handover\/\r?\n/g, '')) }, /no longer lists docs\/handover/],
     ['manifest-selects-private-file', dir => { const p = join(dir, 'export-manifest.json'), m = JSON.parse(readFileSync(p)); m.files.push({ path: 'docs/handover/NOTES.md' }); writeFileSync(p, JSON.stringify(m)) }, /selects docs\/handover/],
     ['workflow-names-private-path', dir => { const p = join(dir, '.github/workflows/ci.yml'); writeFileSync(p, readFileSync(p, 'utf8') + '      - run: cat .goalmatic/local/world-state.json\n') }, /private path/],
     ['workflow-file-removed', dir => rmSync(join(dir, '.github/workflows/release.yml')), /release\.yml is missing/],

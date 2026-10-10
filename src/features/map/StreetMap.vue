@@ -10,6 +10,7 @@ import { categoryStyle } from '../../geo/categoryStyle.ts'
 import AvatarPortrait from '../avatar/AvatarPortrait.vue'
 import { TRAVEL } from '../../shared/travel.ts'
 import { adjacentDistricts, districtPolygon, lngLatToLocal, localToLngLat, walkingRange } from './geometry.ts'
+import { createMapCameraControls, type CameraMove } from './camera-controls.ts'
 
 const props = defineProps<{
   districtId: DistrictId; position: Vec2; heading: number; places: Poi[]; members: PresenceMember[]
@@ -19,8 +20,10 @@ const emit = defineEmits<{ place: [poi: Poi]; point: [lng: number, lat: number];
 const container = ref<HTMLElement | null>(null)
 const loading = ref(true)
 const problem = ref('')
+const threeDView = ref(true)
 let map: LibreMap | null = null
 let libre: typeof import('maplibre-gl') | null = null
+let cameraControls: ReturnType<typeof createMapCameraControls> | null = null
 let me: Marker | null = null
 let arrival: Marker | null = null
 let selected: Marker | null = null
@@ -36,6 +39,7 @@ const motion = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 
 const APPROACH_GAP = 6
 /** How much the other places fade while one destination is chosen. */
 const DIMMED = 0.5
+const CITY_PITCH = 48
 
 function placeData(): FeatureCollection<Point> {
   return { type: 'FeatureCollection', features: props.places.map(poi => ({ type: 'Feature', properties: { id: poi.placeId, name: poi.name, category: poi.category }, geometry: { type: 'Point', coordinates: localToLngLat(props.districtId, poi.pos) } })) }
@@ -128,6 +132,42 @@ function addLayers(): void {
   map.addLayer({ id: 'pins', type: 'symbol', source: 'places', filter: ['!', ['has', 'point_count']], layout: { 'icon-image': ['concat', 'pin-', ['get', 'category']], 'icon-allow-overlap': false, 'icon-padding': 5 } })
   map.addLayer({ id: 'names', type: 'symbol', source: 'places', minzoom: 16.5, filter: ['!', ['has', 'point_count']], layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 12, 'text-anchor': 'top', 'text-offset': [0, 2], 'text-max-width': 12 }, paint: { 'text-color': '#332c26', 'text-halo-color': '#fffdf9', 'text-halo-width': 2 } })
 }
+function add3DBuildings(): void {
+  if (!map || map.getLayer('benin-life-3d-buildings')) return
+  const layers = map.getStyle().layers ?? []
+  if (layers.some(layer => layer.type === 'fill-extrusion' && /building/i.test(layer.id))) return
+  const footprint = layers.find(layer =>
+    layer.type === 'fill' &&
+    /building/i.test(layer.id) &&
+    'source' in layer && typeof layer.source === 'string' &&
+    'source-layer' in layer && typeof layer['source-layer'] === 'string',
+  )
+  if (!footprint || !('source' in footprint) || typeof footprint.source !== 'string' ||
+      !('source-layer' in footprint) || typeof footprint['source-layer'] !== 'string') return
+  const source = footprint.source
+  const sourceLayer = footprint['source-layer']
+  if (!map.getSource(source)) return
+  const firstLabel = layers.find(layer => layer.type === 'symbol')?.id
+  try {
+    map.addLayer({
+      id: 'benin-life-3d-buildings',
+      type: 'fill-extrusion',
+      source,
+      'source-layer': sourceLayer,
+      minzoom: 15.5,
+      paint: {
+        'fill-extrusion-color': ['match', ['get', 'class'], 'commercial', '#d7bca0', 'industrial', '#bbc7bf', 'residential', '#d7d2c5', '#c4cec5'],
+        'fill-extrusion-height': ['max', 4, ['to-number', ['coalesce', ['get', 'render_height'], ['get', 'height'], 8], 8]],
+        'fill-extrusion-base': ['max', 0, ['to-number', ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0], 0]],
+        'fill-extrusion-opacity': 0.96,
+        'fill-extrusion-vertical-gradient': true,
+      },
+    }, firstLabel)
+  } catch {
+    // Some compatible styles expose building footprints without extrusion-safe attributes.
+  }
+}
+
 function updateMe(): void {
   if (!map || !libre) return
   if (!props.showPosition) { me?.remove(); me = null; return }
@@ -195,10 +235,30 @@ function updateSelected(): void {
   } else { el.textContent = '+'; el.style.background = '#fffdf9' }
   selected = new libre.Marker({ element: el }).setLngLat(coordinate).addTo(map)
 }
-function centre(): void { map?.easeTo({ center: localToLngLat(props.districtId, props.position), zoom: 16.4, bearing: bearing(), duration: motion() }) }
-function focus(poi: Poi): void { map?.easeTo({ center: localToLngLat(props.districtId, poi.pos), zoom: Math.max(17, map.getZoom()), duration: motion() }) }
-function city(): void { if (!props.rangeCenter) return; map?.easeTo({ center: props.rangeCenter, zoom: 9, bearing: 0, duration: motion() }) }
+function centre(): void { map?.easeTo({ center: localToLngLat(props.districtId, props.position), zoom: 16.4, pitch: threeDView.value ? CITY_PITCH : 0, bearing: bearing(), duration: motion() }) }
+function focus(poi: Poi): void { map?.easeTo({ center: localToLngLat(props.districtId, poi.pos), zoom: Math.max(17, map.getZoom()), pitch: threeDView.value ? CITY_PITCH : 0, duration: motion() }) }
+function city(): void {
+  if (!props.rangeCenter) return
+  threeDView.value = false
+  map?.easeTo({ center: props.rangeCenter, zoom: 9, pitch: 0, bearing: 0, duration: motion() })
+}
+function togglePerspective(): void {
+  if (!map) return
+  threeDView.value = !threeDView.value
+  map.easeTo({ pitch: threeDView.value ? CITY_PITCH : 0, bearing: threeDView.value ? bearing() : 0, duration: motion() })
+}
+function cameraPointerDown(event: PointerEvent, move: CameraMove): void {
+  if (event.button !== 0) return
+  event.preventDefault()
+  if (event.currentTarget instanceof HTMLElement) event.currentTarget.setPointerCapture(event.pointerId)
+  cameraControls?.press(move)
+}
+function cameraPointerUp(): void { cameraControls?.release() }
+function cameraClick(event: MouseEvent, move: CameraMove): void {
+  if (event.detail === 0) cameraControls?.step(move)
+}
 function clear(): void {
+  cameraControls?.dispose(); cameraControls = null
   clearTimeout(deadline); resize?.disconnect(); resize = null
   for (const marker of people.values()) render(null, marker.getElement())
   fittedRoute = ''; hiddenName = ''; me = null; arrival = null; selected = null; people.clear(); map?.remove(); map = null
@@ -209,8 +269,10 @@ async function initialise(): Promise<void> {
     const [module, worker] = await Promise.all([import('maplibre-gl'), import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'), import('maplibre-gl/dist/maplibre-gl.css')])
     if (disposed || mine !== attempt || !container.value) return
     libre = module; module.setWorkerUrl(worker.default)
-    const instance = new module.Map({ container: container.value, style: 'https://tiles.openfreemap.org/styles/positron', center: localToLngLat(props.districtId, props.position), zoom: 16.4, bearing: bearing(), maxZoom: 19, minZoom: 3, maxPitch: 0, dragRotate: false, touchPitch: false, renderWorldCopies: false, pixelRatio: Math.min(devicePixelRatio, 1.5), attributionControl: false })
-    map = instance; instance.touchZoomRotate.disableRotation(); instance.keyboard.disableRotation()
+    const instance = new module.Map({ container: container.value, style: 'https://tiles.openfreemap.org/styles/positron', center: localToLngLat(props.districtId, props.position), zoom: 16.4, pitch: threeDView.value ? CITY_PITCH : 0, bearing: bearing(), maxZoom: 19, minZoom: 3, maxPitch: 60, dragRotate: true, touchPitch: true, renderWorldCopies: false, pixelRatio: Math.min(devicePixelRatio, 1.5), attributionControl: false })
+    map = instance
+    instance.touchZoomRotate.enableRotation()
+    cameraControls = createMapCameraControls(instance, () => emit('pan'), () => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
     instance.addControl(new module.ScaleControl({ maxWidth: 90 }), 'bottom-left')
     instance.addControl(new module.AttributionControl({ compact: false, customAttribution: '<a href="https://github.com/openmaptiles/positron-gl-style/blob/master/LICENSE.md" target="_blank" rel="noopener">Positron</a>' }), 'bottom-right')
@@ -218,7 +280,7 @@ async function initialise(): Promise<void> {
     instance.on('error', () => { loading.value = false; problem.value = 'Some map tiles could not load. You can still use the places list.' })
     instance.once('load', () => {
       if (disposed || mine !== attempt) return
-      clearTimeout(deadline); loading.value = false; addLayers(); updateMe(); updatePeople(); updateSelected(); updateRoute()
+      clearTimeout(deadline); loading.value = false; add3DBuildings(); addLayers(); updateMe(); updatePeople(); updateSelected(); updateRoute()
       if (props.arrival) {
         const el = document.createElement('button'); el.type = 'button'; el.className = 'street-arrival'; el.textContent = 'A'; el.title = `Arrival · ${props.arrival.label}`; el.setAttribute('aria-label', el.title)
         el.addEventListener('click', e => { e.stopPropagation(); if (props.arrival) { const p = localToLngLat(props.districtId, props.arrival.pos); emit('point', p[0], p[1]) } })
@@ -256,14 +318,27 @@ watch([() => props.selected?.placeId, () => props.target?.[0], () => props.targe
 watch(() => props.districtId, () => void initialise())
 onMounted(() => void initialise())
 onBeforeUnmount(() => { disposed = true; attempt++; clear() })
-function zoomIn(): void { map?.zoomIn({ duration: motion() }) }
-function zoomOut(): void { map?.zoomOut({ duration: motion() }) }
+function zoomIn(): void { cameraControls?.step({ kind: 'zoom', dir: 1 }) }
+function zoomOut(): void { cameraControls?.step({ kind: 'zoom', dir: -1 }) }
 defineExpose({ centre, focus, city, zoomIn, zoomOut })
 </script>
 
 <template>
   <div class="street-map" aria-label="Interactive street map. Use the places list for keyboard navigation.">
     <div ref="container" class="street-canvas"></div>
+    <div class="street-camera-controls" role="group" aria-label="Map camera controls">
+      <div class="street-zoom-stack">
+        <button type="button" aria-label="Zoom in" title="Zoom in · hold for continuous zoom" @pointerdown="cameraPointerDown($event, { kind: 'zoom', dir: 1 })" @pointerup="cameraPointerUp" @pointercancel="cameraPointerUp" @lostpointercapture="cameraPointerUp" @blur="cameraPointerUp" @click="cameraClick($event, { kind: 'zoom', dir: 1 })">+</button>
+        <button type="button" aria-label="Zoom out" title="Zoom out · hold for continuous zoom" @pointerdown="cameraPointerDown($event, { kind: 'zoom', dir: -1 })" @pointerup="cameraPointerUp" @pointercancel="cameraPointerUp" @lostpointercapture="cameraPointerUp" @blur="cameraPointerUp" @click="cameraClick($event, { kind: 'zoom', dir: -1 })">−</button>
+      </div>
+      <div class="street-pan-pad" role="group" aria-label="Pan map">
+        <button class="north" type="button" aria-label="Pan north" @pointerdown="cameraPointerDown($event, { kind: 'pan', dx: 0, dy: -1 })" @pointerup="cameraPointerUp" @pointercancel="cameraPointerUp" @lostpointercapture="cameraPointerUp" @blur="cameraPointerUp" @click="cameraClick($event, { kind: 'pan', dx: 0, dy: -1 })">↑</button>
+        <button class="west" type="button" aria-label="Pan west" @pointerdown="cameraPointerDown($event, { kind: 'pan', dx: -1, dy: 0 })" @pointerup="cameraPointerUp" @pointercancel="cameraPointerUp" @lostpointercapture="cameraPointerUp" @blur="cameraPointerUp" @click="cameraClick($event, { kind: 'pan', dx: -1, dy: 0 })">←</button>
+        <button class="east" type="button" aria-label="Pan east" @pointerdown="cameraPointerDown($event, { kind: 'pan', dx: 1, dy: 0 })" @pointerup="cameraPointerUp" @pointercancel="cameraPointerUp" @lostpointercapture="cameraPointerUp" @blur="cameraPointerUp" @click="cameraClick($event, { kind: 'pan', dx: 1, dy: 0 })">→</button>
+        <button class="south" type="button" aria-label="Pan south" @pointerdown="cameraPointerDown($event, { kind: 'pan', dx: 0, dy: 1 })" @pointerup="cameraPointerUp" @pointercancel="cameraPointerUp" @lostpointercapture="cameraPointerUp" @blur="cameraPointerUp" @click="cameraClick($event, { kind: 'pan', dx: 0, dy: 1 })">↓</button>
+      </div>
+      <button class="street-perspective" type="button" :aria-pressed="threeDView" :aria-label="threeDView ? 'Switch to 2D map view' : 'Switch to 3D city view'" @click="togglePerspective">{{ threeDView ? '3D' : '2D' }}</button>
+    </div>
     <div v-if="loading || problem" class="street-notice" role="status">
       <span>{{ problem || 'Opening the street map…' }}</span>
       <button v-if="problem" class="btn sm" @click="initialise">Retry map</button>
@@ -274,6 +349,26 @@ defineExpose({ centre, focus, city, zoomIn, zoomOut })
 <style>
 .street-map,.street-map .street-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .street-map { z-index: 0; background: #e8e9e1; }
+.street-camera-controls { position: absolute; z-index: 8; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px; border: 1px solid #ffffffc2; border-radius: 16px; background: #fffdf9ed; box-shadow: 0 8px 24px #17251e2e; backdrop-filter: blur(12px); color: #203c34; pointer-events: auto; user-select: none; }
+.street-camera-controls button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: inherit; font: 650 21px/1 system-ui, sans-serif; cursor: pointer; touch-action: none; }
+.street-camera-controls button:hover { background: #e5eee8; }
+.street-camera-controls button:active { background: #d0e3d7; }
+.street-camera-controls button:focus-visible { outline: 3px solid #d39b2a; outline-offset: 2px; }
+.street-zoom-stack { display: grid; gap: 3px; }
+.street-pan-pad { display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); gap: 1px; padding: 2px; border-top: 1px solid #dce2dc; border-bottom: 1px solid #dce2dc; }
+.street-pan-pad button { width: 28px; height: 28px; border-radius: 7px; font-size: 16px; }
+.street-pan-pad .north { grid-column: 2; grid-row: 1; }
+.street-pan-pad .west { grid-column: 1; grid-row: 2; }
+.street-pan-pad .east { grid-column: 3; grid-row: 2; }
+.street-pan-pad .south { grid-column: 2; grid-row: 3; }
+.street-camera-controls .street-perspective { width: 44px; height: 32px; border: 1px solid #c9d7ce; background: #203c34; color: #fffdf9; font-size: 12px; letter-spacing: .04em; }
+.street-camera-controls .street-perspective:hover { background: #2d594c; }
+@media (max-width: 600px) {
+  .street-camera-controls { top: 10px; right: 10px; padding: 5px; gap: 4px; }
+  .street-pan-pad { display: none; }
+  .street-camera-controls button { width: 34px; height: 34px; }
+  .street-camera-controls .street-perspective { width: 42px; height: 30px; }
+}
 .street-notice { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 100px); width: 360px; padding: 12px; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); display: grid; gap: 8px; font-size: 13px; z-index: 2; }
 .street-me { z-index: 3; width: 36px; height: 36px; border: 3px solid white; border-radius: 50%; background: #263a60; box-shadow: 0 3px 9px #151c3650; pointer-events: none; }
 .street-me span { display: block; width: 20px; height: 24px; margin: 2px auto; background: white; clip-path: polygon(50% 0, 100% 100%, 50% 75%, 0 100%); }

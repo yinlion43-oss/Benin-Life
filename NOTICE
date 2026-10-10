@@ -7,3 +7,9 @@ Third-party software, models, textures, animation, dictionaries and other assets
 retain their respective licenses and attribution requirements. See
 docs/ASSETS-LICENSES.md and the license files accompanying assets under public/.
 This project's license does not replace those notices or terms.
+
+OSIRIS MapLibre camera-control adaptation
+The file src/features/map/camera-controls.ts adapts camera-control code from
+https://github.com/simplifaisoul/osiris/blob/master/src/lib/map-camera-controls.ts
+Copyright (c) 2026 simplifaisoul. MIT License. Preserve the companion notice at
+src/features/map/OSIRIS-MIT-NOTICE.md and the inventory entry in docs/ASSETS-LICENSES.md.

@@ -19,6 +19,9 @@ assert.ok(streetLife.includes("low: 2, medium: 5, high: 7"), 'street activity gr
 const benin = regionKitFor('NG', 'Benin City')
 assert.equal(benin?.id, 'benin-city', 'Benin City gets its own regional dressing')
 assert.equal(benin?.profile, 'market', 'Benin City uses the Nigerian market-street profile')
+for (const area of ['Benin City', 'Ring Road', 'GRA / Etete', 'Ogbe', 'New Benin', 'Ekenwan', 'Ikpoba Hill', 'Ugbowo', 'Uselu', 'Ekosodin', 'Ugbor', 'Aduwawa', 'Ramat Park', 'Igun Street', 'Sapele Road', 'Airport Road']) {
+  assert.equal(regionKitFor('NG', area)?.id, 'benin-city', `${area} receives Benin City street dressing`)
+}
 assert.ok((benin?.density ?? 0) > (regionKitFor('NG', 'Unknown Nigerian Area')?.density ?? 1), 'the Benin City kit adds more street detail than the generic fallback')
 assert.ok(['danfo', 'keke', 'okada', 'stall-red', 'stall-green', 'pos-kiosk'].every(model => benin?.models.includes(model as never)), 'the city kit keeps local transport and roadside commerce assets')
 

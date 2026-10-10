@@ -22,6 +22,7 @@ export const REGION_KITS: readonly RegionKit[] = [
   nigeriaKit('abuja', ['abuja', 'wuse', 'garki', 'maitama'], 'Abuja', 'planned', 0.42),
   nigeriaKit('ibadan', ['ibadan', 'bodija'], 'Ibadan', 'market', 0.88),
   nigeriaKit('lagos', ['lagos', 'yaba', 'ikorodu', 'obalende'], 'Lagos', 'urban', 0.88),
+  { ...nigeriaKit('benin-city', ['benin', 'ugbowo', 'uselu', 'ekosodin', 'etete', 'ugbor', 'adu wawa', 'aduwawa', 'ramat', 'igun', 'sapele', 'airport'], 'Benin City', 'market', 0.84), ground: '#b99e79' },
   nigeriaKit('nigeria', [], 'Nigeria', 'urban', 0.65),
   { id: 'manchester', countryCode: 'GB', cities: ['manchester'], description: 'Street details are illustrative of Manchester; streets and places are from the map.', pack: '/regions/manchester.pack.gz', models: ['postbox', 'bollards', 'pubsign', 'beacon'], residential: ['bollards'], commercial: ['bollards'], arterial: ['bollards'], ground: '#7e7c78', density: 0.45, profile: 'temperate' },
 ]

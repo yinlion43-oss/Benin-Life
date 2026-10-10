@@ -28,6 +28,20 @@ export interface NearbyMember extends PublicMember {
   sharedCommunities: string[]
 }
 
+// ── Relationship progression ───────────────────────────────────────────────────────────────────
+
+/** Friendship levels: Stranger → Acquaintance → Friend → Close Friend → Best Friend. */
+export type RelationLevel = 'stranger' | 'acquaintance' | 'friend' | 'close-friend' | 'best-friend'
+/** Romantic path: Stranger → Interest → Dating → Partner. Separate from friendship. */
+export type RomanceLevel = 'stranger' | 'interest' | 'dating' | 'partner'
+
+export const RELATION_LEVELS: readonly RelationLevel[] = ['stranger', 'acquaintance', 'friend', 'close-friend', 'best-friend']
+export const ROMANCE_LEVELS: readonly RomanceLevel[] = ['stranger', 'interest', 'dating', 'partner']
+
+/** Points needed to advance the friendship track. */
+export const RELATION_XP = { acquaintance: 5, friend: 15, closeFriend: 40, bestFriend: 100 } as const
+export const ROMANCE_XP = { interest: 5, dating: 20, partner: 60 } as const
+
 // ── Communities ───────────────────────────────────────────────────────────────────────────────
 
 export type CommunityRole = 'owner' | 'moderator' | 'member'

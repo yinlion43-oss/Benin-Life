@@ -41,6 +41,11 @@ export const BENIN_CITY_ZONE_ANCHORS = [
   { label: 'Igun Street', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.337055, lon: 5.630049 }, osmType: 'way', osmId: 41203715, precision: 'mapped-feature-centroid' },
   { label: 'Sapele Road', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.323627, lon: 5.626520 }, osmType: 'way', osmId: 233030540, precision: 'mapped-road-anchor' },
   { label: 'Airport Road', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.318053, lon: 5.607262 }, osmType: 'way', osmId: 518326590, precision: 'mapped-road-anchor' },
+  { label: 'Ring Road', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.335, lon: 5.6037 }, osmType: 'node', osmId: 0, precision: 'approximation' },
+  { label: 'Ogbe', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.330, lon: 5.610 }, osmType: 'node', osmId: 0, precision: 'approximation' },
+  { label: 'New Benin', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.329, lon: 5.626 }, osmType: 'node', osmId: 0, precision: 'approximation' },
+  { label: 'Ekenwan', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.30, lon: 5.58 }, osmType: 'node', osmId: 0, precision: 'approximation' },
+  { label: 'Ikpoba Hill', countryCode: 'NG', region: 'Edo', anchor: { lat: 6.315, lon: 5.59 }, osmType: 'node', osmId: 0, precision: 'approximation' },
 ] as const
 
 /** Real place anchors named in the Benin Life planning conversation; map positions resolve from gazetteer data. */

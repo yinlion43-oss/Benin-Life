@@ -175,7 +175,7 @@ football clubs, legal gameplay, campaigns, or the other systems listed below. Pr
 
 | Order | Work | Existing foundation | Benin Life-specific work still required |
 | --- | --- | --- | --- |
-| 1 | City/map and real clock | map/geo, districts, street renderer, local-hour lighting | finish mapping the 15 Benin navigation zones (10 public feature anchors are integrated; 5 remain unresolved), add verified boundary geometry where available, wire landmarks, use shared `Africa/Lagos` clock |
+| 1 | City/map and real clock | map/geo, districts, street renderer, local-hour lighting | All 15 Benin navigation zones now have anchors (10 OSM-backed + 5 approximations); add verified boundary geometry where available, wire landmarks, use shared `Africa/Lagos` clock |
 | 2 | Username and onboarding | account/session, appearance editor, five-step onboarding, unique handle registry, traits/dream/status/skills/perk initialization | starter loadout/balance, migration policy, and full onboarding acceptance |
 | 3 | Needs/skills/perks/feelings | service-owned life needs and activities, initial Benin skill and perk records, Edo-specific service-resolved food menu | trait/perk effects, complete event catalogue and persistence |
 | 4 | Phone and BeninBank | app hub, username transfer, paired transaction history, retry-safe server operation | scheduled payment operations, reconciliation and broader wallet-ledger integration; no request-money UI/op |

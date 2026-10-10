@@ -2,6 +2,7 @@
 import { parseAvatarAppearance } from '../src/shared/appearance.ts'
 import { BIG_DREAMS, LIFE_STATUSES, PERK_IDS, PLAYER_TRAITS, STARTING_SKILLS, normalizeBeninUsername } from '../src/shared/beninLife.ts'
 import type { BigDream, BeninCharacter, LifeStatus, PerkId, PlayerTraitId } from '../src/shared/beninLife.ts'
+import type { RelationLevel, RomanceLevel } from '../src/shared/social.ts'
 import type { AreaId, HomeId, Iso, MemberId, ReportId, RoomKey } from '../src/shared/ids.ts'
 import { iso, ms, newId } from '../src/shared/ids.ts'
 import { areaIdOf, areaOfDistrict, districtIdOf, parseAreaId, parseDistrictId } from '../src/shared/geo.ts'
@@ -29,6 +30,13 @@ interface MemberRecord {
    * can list the other. They are listed and can be messaged; nothing that is "for friends" is shared through them.
    */
   tagged?: Record<string, FriendTag>
+  /**
+   * Relationship progression: Stranger → Acquaintance → Friend → Close Friend → Best Friend.
+   * Romantic path is separate: Stranger → Interest → Dating → Partner. Level is mutual.
+   */
+  relations?: Record<string, RelationLevel>
+  /** Romantic interest/relationship, separate from friendship. */
+  romance?: Record<string, RomanceLevel>
 }
 interface ReportRecord { id: ReportId; by: MemberId; about: MemberId; reason: ReportReason; detail: string; room: RoomKey | null; at: Iso }
 interface MemberState {

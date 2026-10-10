@@ -25,6 +25,7 @@ import type {
   DayView, Dish, FoodRegionId, FriendMood, LifeChanged, LifeEffects, LifeState, LifeSummary, MealRecord, Mealtime, Menu, MenuItem, NeedKey, NeedView, PlaceClaim,
   Receipt, Tier, VenueKind,
 } from '../src/shared/life.ts'
+import type { PerkId } from '../src/shared/beninLife.ts'
 import { WorldError } from '../src/shared/model.ts'
 import type { RoomRef } from '../src/shared/model.ts'
 import type { World } from './kernel.ts'
@@ -110,33 +111,57 @@ const coins = (count: number): string => `${count} ${count === 1 ? 'coin' : 'coi
 const hungryKey = (memberId: MemberId): string => `life:hungry:${memberId}`
 const exhaustedKey = (memberId: MemberId): string => `life:exhausted:${memberId}`
 
+/** The perks a member's character has, so the life service can slow the fall or speed the rise. */
+const perksOf = (world: World, memberId: MemberId): PerkId[] => {
+  const beninLife = record(world, memberId).profile.beninLife
+  return beninLife?.perks ?? []
+}
+
 // ── Time ──────────────────────────────────────────────────────────────────────────────────────
 
 /** Where the meters stand at `now`, given how the time since the record was spent. Changes nothing. */
-function project(member: Pick<MemberLife, 'hunger' | 'energy' | 'at'>, now: number, mode: Mode, activeUntil = Infinity): { hunger: number; energy: number } {
+function project(
+  member: Pick<MemberLife, 'hunger' | 'energy' | 'at'>,
+  now: number,
+  mode: Mode,
+  perks: PerkId[],
+  activeUntil = Infinity
+): { hunger: number; energy: number } {
   if (mode !== 'away' && now > activeUntil) {
     const boundary = Math.max(member.at, activeUntil)
-    const active = project(member, boundary, mode)
-    return project({ ...active, at: boundary }, now, 'away')
+    const active = project(member, boundary, mode, perks)
+    return project({ ...active, at: boundary }, now, 'away', perks)
   }
   const elapsed = Math.max(0, now - member.at)
   const hours = elapsed / HOUR
   // Time alone never takes a meter below its floor; a meter already below it stays where it is.
-  const fall = (value: number, perHour: number, floor: number): number => (value > floor ? Math.max(floor, value + perHour * hours) : value)
-  if (mode === 'away') return { hunger: fall(member.hunger, LIFE.away.hunger, LIFE.floor.awayHunger), energy: Math.min(100, member.energy + LIFE.away.energy * hours) }
-  const hunger = fall(member.hunger, LIFE.online.hunger, LIFE.floor.hunger)
+  const fall = (value: number, perHour: number, floor: number, key: NeedKey): number => {
+    let multiplier = 1
+    if (key === 'hunger' && perks.includes('iron-belle')) multiplier -= 0.25
+    if (key === 'energy' && perks.includes('early-bird')) multiplier -= 0.25
+    if (key === 'hunger' && perks.includes('never-dull') && mode === 'online') multiplier -= 0.25 // Example usage
+    if (value > floor) return Math.max(floor, value + (perHour * multiplier) * hours)
+    return value
+  }
+  if (mode === 'away') {
+    return {
+      hunger: fall(member.hunger, LIFE.away.hunger, LIFE.floor.awayHunger, 'hunger'),
+      energy: Math.min(100, member.energy + (LIFE.away.energy * (perks.includes('early-bird') ? 1.25 : 1)) * hours)
+    }
+  }
+  const hunger = fall(member.hunger, LIFE.online.hunger, LIFE.floor.hunger, 'hunger')
   if (mode === 'home') return { hunger, energy: Math.min(100, member.energy + (LIFE.restPerSecond * elapsed) / 1000) }
-  return { hunger, energy: fall(member.energy, LIFE.online.energy, LIFE.floor.energy) }
+  return { hunger, energy: fall(member.energy, LIFE.online.energy, LIFE.floor.energy, 'energy') }
 }
 
-function commit(member: MemberLife, now: number, mode: Mode, activeUntil = Infinity): void {
-  const next = project(member, now, mode, activeUntil)
+function commit(member: MemberLife, now: number, mode: Mode, perks: PerkId[], activeUntil = Infinity): void {
+  const next = project(member, now, mode, perks, activeUntil)
   member.hunger = next.hunger
   member.energy = next.energy
   member.at = now
 }
 
-function effectsOf(values: { hunger: number; energy: number }, member: MemberLife, now: number): LifeEffects {
+function effectsOf(values: { hunger: number; energy: number }, member: MemberLife, now: number, perks: PerkId[]): LifeEffects {
   const hunger = whole(values.hunger), energy = whole(values.energy)
   const onForm = hunger >= LIFE.bands.good && energy >= LIFE.bands.good
   const company = member.companyUntil !== null && member.companyUntil > now
@@ -150,8 +175,8 @@ function effectsOf(values: { hunger: number; energy: number }, member: MemberLif
   }
 }
 
-const bandsOf = (values: { hunger: number; energy: number }, member: MemberLife, now: number): string => {
-  const effects = effectsOf(values, member, now)
+const bandsOf = (values: { hunger: number; energy: number }, member: MemberLife, now: number, perks: PerkId[]): string => {
+  const effects = effectsOf(values, member, now, perks)
   return [levelOf(whole(values.hunger)), levelOf(whole(values.energy)), effects.onForm ? 1 : 0, effects.companyUntil ? 1 : 0, whole(values.energy) >= 100 ? 1 : 0].join('|')
 }
 
@@ -179,7 +204,7 @@ function seenOf(world: World, memberId: MemberId, member: MemberLife, now: numbe
   const rt = runtime(world)
   let seen = rt.seen.get(memberId)
   if (!seen) {
-    seen = { mode: ownHome(world, memberId) ? 'home' : 'online', activeUntil: activityUntil(world, memberId), bands: bandsOf(member, member, now) }
+    seen = { mode: ownHome(world, memberId) ? 'home' : 'online', activeUntil: activityUntil(world, memberId), bands: bandsOf(member, member, now, perksOf(world, memberId)) }
     rt.seen.set(memberId, seen)
   }
   return seen
@@ -193,9 +218,9 @@ function modeOf(world: World, memberId: MemberId, member: MemberLife, now: numbe
 }
 
 function projectFor(world: World, memberId: MemberId, member: MemberLife, now: number): { hunger: number; energy: number } {
-  if (!runtime(world).online.has(memberId)) return project(member, now, 'away')
+  if (!runtime(world).online.has(memberId)) return project(member, now, 'away', perksOf(world, memberId))
   const seen = seenOf(world, memberId, member, now)
-  return project(member, now, seen.mode, seen.activeUntil)
+  return project(member, now, seen.mode, perksOf(world, memberId), seen.activeUntil)
 }
 
 function commitFor(world: World, memberId: MemberId, member: MemberLife, now: number): void {
@@ -267,7 +292,7 @@ function view(world: World, memberId: MemberId, member: MemberLife, now: number)
   const region = regionOf(world, memberId)
   const here = regionDishes(region)
   return {
-    hunger: need('hunger', values.hunger), energy: need('energy', values.energy), effects: effectsOf(values, member, now),
+    hunger: need('hunger', values.hunger), energy: need('energy', values.energy), effects: effectsOf(values, member, now, perksOf(world, memberId)),
     resting: mode === 'home' && whole(values.energy) < 100, pantry: member.pantry, balance: careerPoints(world, memberId),
     firstMealFree: !member.firstMealUsed, meals: member.meals.map(meal => ({ ...meal, with: [...meal.with] })), tried: [...member.tried],
     region: { id: region, label: foodRegionLabel(region), dishes: here.length, tried: here.filter(dish => member.tried.includes(dish.id)).length },
@@ -315,10 +340,11 @@ function thresholds(world: World, memberId: MemberId, member: MemberLife, now: n
 function observe(world: World, memberId: MemberId, member: MemberLife, now: number): void {
   if (!runtime(world).online.has(memberId)) return
   const seen = seenOf(world, memberId, member, now)
-  const bands = bandsOf(project(member, now, seen.mode, seen.activeUntil), member, now)
+  const perks = perksOf(world, memberId)
+  const bands = bandsOf(project(member, now, seen.mode, perks, seen.activeUntil), member, now, perks)
   if (bands === seen.bands) return
-  commit(member, now, seen.mode, seen.activeUntil)
-  const note = changeNote(seen.bands, bands, effectsOf(member, member, now).shiftBonusPercent)
+  commit(member, now, seen.mode, perks, seen.activeUntil)
+  const note = changeNote(seen.bands, bands, effectsOf(member, member, now, perks).shiftBonusPercent)
   seen.bands = bands
   thresholds(world, memberId, member, now)
   world.touch()
@@ -331,10 +357,11 @@ function roomChanged(world: World, memberId: MemberId, ref: RoomRef, now: number
   const member = recordOf(world, memberId)
   if (!member || ref.homeId !== record(world, memberId).profile.homeId) return
   const seen = seenOf(world, memberId, member, now)
+  const perks = perksOf(world, memberId)
   // Up to this instant the member was outside (entering) or at home (leaving): exactly that, to the millisecond.
-  commit(member, now, entered ? 'online' : 'home', seen.activeUntil)
+  commit(member, now, entered ? 'online' : 'home', perks, seen.activeUntil)
   seen.mode = entered ? 'home' : 'online'
-  seen.bands = bandsOf(member, member, now)
+  seen.bands = bandsOf(member, member, now, perks)
   thresholds(world, memberId, member, now)
   world.touch()
   announce(world, memberId, member, now, 'home', '')
@@ -346,7 +373,8 @@ function shiftClosed(world: World, memberId: MemberId, shift: { status: 'complet
   if (!member || shift.status !== 'completed') return
   const now = world.now()
   commitFor(world, memberId, member, now)
-  const effects = effectsOf(member, member, now)
+  const perks = perksOf(world, memberId)
+  const effects = effectsOf(member, member, now, perks)
   let bonus = 0, note = ''
   if (effects.onForm && shift.points > 0) {
     bonus = Math.min(effects.shiftBonusCap, Math.max(1, Math.round((shift.points * effects.shiftBonusPercent) / 100)))
@@ -358,7 +386,7 @@ function shiftClosed(world: World, memberId: MemberId, shift: { status: 'complet
   member.energy = spend(member.energy, LIFE.shift.energy, LIFE.floor.energy)
   const seen = runtime(world).seen.get(memberId)
   if (seen) {
-    const bands = bandsOf(member, member, now)
+    const bands = bandsOf(member, member, now, perks)
     note ||= changeNote(seen.bands, bands, effects.shiftBonusPercent)
     seen.bands = bands
   }
@@ -375,18 +403,19 @@ function hook(): void {
   onRoomEnter((world, memberId, ref, now) => roomChanged(world, memberId, ref, now, true))
   onRoomLeave((world, memberId, ref, now) => roomChanged(world, memberId, ref, now, false))
   onActivity((world, memberId, now, until) => {
-    if (!runtime(world).online.has(memberId)) return
-    const member = recordOf(world, memberId)
-    if (!member) return
-    const seen = seenOf(world, memberId, member, now)
-    if (now >= seen.activeUntil) {
-      commit(member, now, seen.mode, seen.activeUntil)
-      thresholds(world, memberId, member, now)
-      seen.bands = bandsOf(member, member, now)
-      world.touch()
-    }
-    seen.activeUntil = until
-  })
+      if (!runtime(world).online.has(memberId)) return
+      const member = recordOf(world, memberId)
+      if (!member) return
+      const seen = seenOf(world, memberId, member, now)
+      const perks = perksOf(world, memberId)
+      if (now >= seen.activeUntil) {
+        commit(member, now, seen.mode, perks, seen.activeUntil)
+        thresholds(world, memberId, member, now)
+        seen.bands = bandsOf(member, member, now, perks)
+        world.touch()
+      }
+      seen.activeUntil = until
+    })
   setShiftClosedHook(shiftClosed)
 }
 
@@ -404,7 +433,11 @@ function current(world: World, memberId: MemberId, now: number): MemberLife {
   }
   observe(world, memberId, member, now)
   // An operation from a member who is not connected (a check script) still sees time pass.
-  if (!runtime(world).online.has(memberId) && now > member.at) { commit(member, now, 'away'); thresholds(world, memberId, member, now) }
+  if (!runtime(world).online.has(memberId) && now > member.at) {
+    const perks = perksOf(world, memberId)
+    commit(member, now, 'away', perks)
+    thresholds(world, memberId, member, now)
+  }
   return member
 }
 
@@ -412,7 +445,7 @@ function current(world: World, memberId: MemberId, now: number): MemberLife {
 function settled(world: World, memberId: MemberId, member: MemberLife, now: number): void {
   thresholds(world, memberId, member, now)
   const seen = runtime(world).seen.get(memberId)
-  if (seen) seen.bands = bandsOf(member, member, now)
+  if (seen) seen.bands = bandsOf(member, member, now, perksOf(world, memberId))
   world.touch()
 }
 
@@ -548,7 +581,7 @@ function sitDown(world: World, memberId: MemberId, member: MemberLife, meal: Mea
     other.companyUntil = now + LIFE.company.hours * HOUR
     other.together++
     const seen = rt.seen.get(seat.memberId)
-    if (seen) { commit(other, now, seen.mode, seen.activeUntil); seen.bands = bandsOf(other, other, now) }
+        if (seen) { commit(other, now, seen.mode, perksOf(world, seat.memberId), seen.activeUntil); seen.bands = bandsOf(other, other, now, perksOf(world, seat.memberId)) }
     announce(world, seat.memberId, other, now, 'table', `${mine} sat down with ${meal.name}. You are eating together.`)
   }
   if (meal.with.length) member.together++
@@ -576,7 +609,7 @@ export function needsSummary(world: World, memberId: MemberId): LifeSummary | nu
   const values = projectFor(world, memberId, member, now)
   const hunger = whole(values.hunger), energy = whole(values.energy)
   const hungry = hunger < LIFE.bands.low, exhausted = energy < LIFE.bands.low
-  const effects = effectsOf(values, member, now)
+  const effects = effectsOf(values, member, now, perksOf(world, memberId))
   // Hungry is "rounds to less than 20", so the crossing is at 19.5.
   const edge = LIFE.bands.low - 0.5
   let hungryAt: Iso | null = null
@@ -607,7 +640,7 @@ export function lifeEffects(world: World, memberId: MemberId): LifeEffects | nul
   const member = recordOf(world, memberId)
   if (!member) return null
   const now = world.now()
-  return effectsOf(projectFor(world, memberId, member, now), member, now)
+  return effectsOf(projectFor(world, memberId, member, now), member, now, perksOf(world, memberId))
 }
 
 // ── Operations ────────────────────────────────────────────────────────────────────────────────
@@ -642,8 +675,8 @@ export function registerLife(world: World): void {
     const energyWas = whole(member.left?.energy ?? member.energy)
     member.left = null
     // Whatever happened since the record was written, the member was not here for it.
-    commit(member, now, 'away')
-    thresholds(world, memberId, member, now)
+        commit(member, now, 'away', perksOf(world, memberId))
+        thresholds(world, memberId, member, now)
     seenOf(world, memberId, member, now)
     world.touch()
     if (gone < WOKE_AFTER_MS) return
@@ -693,8 +726,9 @@ export function registerLife(world: World): void {
     for (const [key, member] of Object.entries(members)) {
       const memberId = key as MemberId
       if (member.hungry || rt.online.has(memberId)) continue
-      if (whole(project(member, now, 'away').hunger) >= LIFE.bands.low) continue
-      try { commit(member, now, 'away'); thresholds(world, memberId, member, now); world.touch() } catch (error) { console.error(`[life] could not update ${memberId}`, error) }
+      const perks = perksOf(world, memberId)
+      if (whole(project(member, now, 'away', perks).hunger) >= LIFE.bands.low) continue
+      try { commit(member, now, 'away', perks); thresholds(world, memberId, member, now); world.touch() } catch (error) { console.error(`[life] could not update ${memberId}`, error) }
     }
   })
 
@@ -784,7 +818,7 @@ export function registerLife(world: World): void {
     if (!member) return { mood: null }
     const values = projectFor(world, input.memberId, member, ctx.now)
     const hunger = levelOf(whole(values.hunger)), energy = levelOf(whole(values.energy))
-    const mood: FriendMood = { hunger, hungerLabel: labelOf('hunger', hunger), energy, energyLabel: labelOf('energy', energy), onForm: effectsOf(values, member, ctx.now).onForm }
+    const mood: FriendMood = { hunger, hungerLabel: labelOf('hunger', hunger), energy, energyLabel: labelOf('energy', energy), onForm: effectsOf(values, member, ctx.now, perksOf(world, input.memberId)).onForm }
     return { mood }
   })
 }

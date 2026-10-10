@@ -7,7 +7,7 @@ const lifePage = readFileSync(new URL('../src/features/life/BeninLifePage.vue', 
 const phonePage = readFileSync(new URL('../src/features/phone/PhonePage.vue', import.meta.url), 'utf8')
 const streetLife = readFileSync(new URL('../src/world/regions/streetLife.ts', import.meta.url), 'utf8')
 
-assert.ok(main.includes("{ path: '/map', component: () => import('./src/features/map/MapPage.vue')"), 'the map route must use the connected live map')
+assert.ok(main.includes("path: '/map'") && main.includes('MapPage.vue') && !main.includes('BeninCityOverview.vue'), 'the map route must use the connected live map')
 assert.ok(main.includes("{ path: '/wallet', redirect: '/phone/bank' }"), 'wallet must lead to the service-backed bank instead of a local-only balance')
 assert.ok(lifePage.includes("from '../../state/world.ts'"), 'City Life must reflect the actual game world')
 assert.doesNotMatch(lifePage, /localStorage|workDay\(|newSave\(/, 'City Life must not mint local-only money or a disconnected save')
